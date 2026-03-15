@@ -53,7 +53,6 @@ export class OverlayUI {
   private readonly replayButton: HTMLButtonElement;
   private readonly joystick: HTMLDivElement;
   private readonly joystickKnob: HTMLDivElement;
-  private readonly lookZone: HTMLDivElement;
   private readonly jumpButton: HTMLButtonElement;
   private readonly resetButton: HTMLButtonElement;
   private moveVector: MoveVector = { x: 0, y: 0 };
@@ -112,9 +111,6 @@ export class OverlayUI {
 
           <div class="control-cluster">
             <button class="jump-button" type="button">점프</button>
-            <div class="look-zone" aria-label="시점 조작 영역">
-              <span>시점 드래그</span>
-            </div>
           </div>
 
           <div class="modal-backdrop is-hidden">
@@ -167,7 +163,6 @@ export class OverlayUI {
     this.replayButton = mount.querySelector<HTMLButtonElement>('.clear-replay')!;
     this.joystick = mount.querySelector<HTMLDivElement>('.joystick')!;
     this.joystickKnob = mount.querySelector<HTMLDivElement>('.joystick-knob')!;
-    this.lookZone = mount.querySelector<HTMLDivElement>('.look-zone')!;
     this.jumpButton = mount.querySelector<HTMLButtonElement>('.jump-button')!;
     this.resetButton = mount.querySelector<HTMLButtonElement>('.reset-button')!;
 
@@ -343,13 +338,17 @@ export class OverlayUI {
     this.joystick.addEventListener('pointerup', releaseJoystick);
     this.joystick.addEventListener('pointercancel', releaseJoystick);
 
-    this.lookZone.addEventListener('pointerdown', (event) => {
+    this.canvas.addEventListener('pointerdown', (event) => {
+      if (this.modalVisible || this.clearVisible) {
+        return;
+      }
+
       this.lookPointerId = event.pointerId;
-      this.lookZone.setPointerCapture(event.pointerId);
+      this.canvas.setPointerCapture(event.pointerId);
       this.lastLookPoint = { x: event.clientX, y: event.clientY };
     });
 
-    this.lookZone.addEventListener('pointermove', (event) => {
+    this.canvas.addEventListener('pointermove', (event) => {
       if (this.lookPointerId !== event.pointerId || !this.lastLookPoint) {
         return;
       }
@@ -368,8 +367,8 @@ export class OverlayUI {
       this.lastLookPoint = null;
     };
 
-    this.lookZone.addEventListener('pointerup', releaseLook);
-    this.lookZone.addEventListener('pointercancel', releaseLook);
+    this.canvas.addEventListener('pointerup', releaseLook);
+    this.canvas.addEventListener('pointercancel', releaseLook);
 
     this.jumpButton.addEventListener('click', () => {
       this.jumpQueued = true;
