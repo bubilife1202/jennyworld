@@ -627,10 +627,17 @@ export class JennyworldGame {
 
   private updateCamera(dt: number): void {
     const playerPosition = this.playerRoot.getPosition();
+    const canvas = this.app.graphicsDevice.canvas as HTMLCanvasElement;
+    const aspect = canvas.clientWidth / Math.max(canvas.clientHeight, 1);
+    const isPortrait = aspect < 0.85;
+    const followX = isPortrait ? 0.72 : 0.16;
+    const followZ = isPortrait ? 0.16 : 0;
+    const cameraHeight = isPortrait ? 12.8 : 11.5;
+    const cameraDistance = isPortrait ? 24.5 : 22;
     const desiredPosition = new pc.Vec3(
-      pc.math.clamp(playerPosition.x * 0.16, -1.8, 1.8),
-      11.5,
-      22,
+      pc.math.clamp(playerPosition.x * followX, -6.2, 6.2),
+      cameraHeight,
+      cameraDistance + playerPosition.z * followZ,
     );
     const current = this.camera.getPosition();
     const blend = 1 - Math.exp(-dt * 5.2);
@@ -640,7 +647,11 @@ export class JennyworldGame {
       pc.math.lerp(current.z, desiredPosition.z, blend),
     );
     this.camera.setPosition(next);
-    this.camera.lookAt(playerPosition.x * 0.08, 1.8, 0);
+    this.camera.lookAt(
+      playerPosition.x * (isPortrait ? 0.72 : 0.08),
+      1.8,
+      isPortrait ? playerPosition.z * 0.22 : 0,
+    );
   }
 
   private animateAvatar(dt: number): void {
