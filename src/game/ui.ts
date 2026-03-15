@@ -20,7 +20,6 @@ import type { PromptState, PuzzleId } from './types';
 interface OverlayHandlers {
   onAction?: () => void;
   onReset?: () => void;
-  onStart?: () => void;
 }
 
 type MoveVector = {
@@ -45,8 +44,6 @@ export class OverlayUI {
   private readonly modalBody: HTMLDivElement;
   private readonly modalClose: HTMLButtonElement;
   private readonly toast: HTMLDivElement;
-  private readonly introOverlay: HTMLDivElement;
-  private readonly startButton: HTMLButtonElement;
   private readonly clearOverlay: HTMLDivElement;
   private readonly replayButton: HTMLButtonElement;
   private readonly joystick: HTMLDivElement;
@@ -56,10 +53,8 @@ export class OverlayUI {
   private joystickPointerId: number | null = null;
   private toastTimer: number | null = null;
   private activeTimers: number[] = [];
-  private introVisible = true;
   private modalVisible = false;
   private clearVisible = false;
-  private autoStartPending = false;
 
   constructor(mount: HTMLElement) {
     mount.innerHTML = `
@@ -116,40 +111,6 @@ export class OverlayUI {
 
           <div class="toast is-hidden" role="status" aria-live="polite"></div>
 
-          <div class="intro-overlay">
-            <section class="intro-card">
-              <div class="intro-grid">
-                <div class="intro-hero">
-                  <p class="eyebrow">Welcome To Jennyworld</p>
-                  <h1>방 하나를 탈출해 보자</h1>
-                  <p>무지개 교실에서 별 조각 네 개를 모으면 다음 스테이지로 갈 수 있다.</p>
-                  <div class="intro-badges">
-                    <span class="intro-badge">로블록스 감성 3D</span>
-                    <span class="intro-badge">모바일 가로 모드</span>
-                    <span class="intro-badge">초등 3학년 난이도</span>
-                  </div>
-                </div>
-                <div class="intro-info">
-                  <section class="info-card">
-                    <h2>어떻게 놀까?</h2>
-                    <p>왼쪽 조이스틱으로 움직이고, 가까이 가면 오른쪽 버튼으로 퍼즐을 연다.</p>
-                    <ul class="info-list">
-                      <li>색 순서 맞추기</li>
-                      <li>도형 자물쇠 바꾸기</li>
-                      <li>연필 개수 세기</li>
-                      <li>빛나는 순서 기억하기</li>
-                    </ul>
-                  </section>
-                  <section class="info-card">
-                    <h2>힌트</h2>
-                    <p>실패해도 다시 할 수 있다. 방 안의 색, 모양, 소품을 잘 보면 답이 보인다.</p>
-                  </section>
-                  <button class="primary-button intro-start" type="button">탐험 시작</button>
-                </div>
-              </div>
-            </section>
-          </div>
-
           <div class="clear-overlay is-hidden">
             <section class="clear-card">
               <p class="eyebrow">Stage Clear</p>
@@ -186,8 +147,6 @@ export class OverlayUI {
     this.modalBody = mount.querySelector<HTMLDivElement>('.modal-body')!;
     this.modalClose = mount.querySelector<HTMLButtonElement>('.modal-close')!;
     this.toast = mount.querySelector<HTMLDivElement>('.toast')!;
-    this.introOverlay = mount.querySelector<HTMLDivElement>('.intro-overlay')!;
-    this.startButton = mount.querySelector<HTMLButtonElement>('.intro-start')!;
     this.clearOverlay = mount.querySelector<HTMLDivElement>('.clear-overlay')!;
     this.replayButton = mount.querySelector<HTMLButtonElement>('.clear-replay')!;
     this.joystick = mount.querySelector<HTMLDivElement>('.joystick')!;
@@ -195,19 +154,11 @@ export class OverlayUI {
     this.resetButton = mount.querySelector<HTMLButtonElement>('.reset-button')!;
 
     this.bindEvents();
-    this.autoStartPending = this.shouldAutoStartForLandscape();
     this.setProgress(0, 4);
   }
 
   setHandlers(handlers: OverlayHandlers): void {
     this.handlers = handlers;
-    if (this.autoStartPending) {
-      window.setTimeout(() => {
-        this.introVisible = false;
-        this.introOverlay.classList.add('is-hidden');
-        this.handlers.onStart?.();
-      }, 180);
-    }
   }
 
   getMoveVector(): MoveVector {
@@ -215,7 +166,7 @@ export class OverlayUI {
   }
 
   isBlockingGame(): boolean {
-    return this.introVisible || this.modalVisible || this.clearVisible;
+    return this.modalVisible || this.clearVisible;
   }
 
   focusCanvas(): void {
@@ -319,19 +270,6 @@ export class OverlayUI {
       this.closeModal();
     });
 
-    this.startButton.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
-    });
-
-    this.startButton.addEventListener('click', () => {
-      this.introVisible = false;
-      this.introOverlay.classList.add('is-hidden');
-      this.startButton.blur();
-      window.scrollTo(0, 0);
-      this.handlers.onStart?.();
-      this.focusCanvas();
-    });
-
     this.replayButton.addEventListener('click', () => {
       this.hideClear();
       this.handlers.onReset?.();
@@ -375,12 +313,6 @@ export class OverlayUI {
 
     this.joystick.addEventListener('pointerup', releaseJoystick);
     this.joystick.addEventListener('pointercancel', releaseJoystick);
-  }
-
-  private shouldAutoStartForLandscape(): boolean {
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    const isLandscape = window.innerWidth > window.innerHeight;
-    return isTouchDevice && isLandscape;
   }
 
   private updateJoystick(clientX: number, clientY: number): void {

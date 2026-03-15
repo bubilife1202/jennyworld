@@ -86,6 +86,7 @@ export class JennyworldGame {
     this.restoreStateFromProgress();
     this.updateObjective();
     this.ui.setProgress(countSolvedPuzzles(this.progress), PUZZLE_IDS.length);
+    this.ui.showToast('조이스틱으로 움직이고, 가까이 가면 살펴보기를 누르세요.');
 
     this.app.on('update', (dt: number) => {
       this.update(dt);

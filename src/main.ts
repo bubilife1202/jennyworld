@@ -18,7 +18,6 @@ Object.assign(window as Window & { __jennyworldDebug?: unknown }, {
 ui.setHandlers({
   onAction: () => game.handleAction(),
   onReset: () => game.resetStage(),
-  onStart: () => game.focus(),
 });
 
 if (import.meta.hot) {
