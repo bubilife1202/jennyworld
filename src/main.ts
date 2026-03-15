@@ -11,11 +11,14 @@ if (!mount) {
 const ui = new OverlayUI(mount);
 const game = new JennyworldGame(ui.canvas, ui);
 
+Object.assign(window as Window & { __jennyworldDebug?: unknown }, {
+  __jennyworldDebug: { game, ui },
+});
+
 ui.setHandlers({
-  onStart: () => game.focus(),
+  onAction: () => game.handleAction(),
   onReset: () => game.resetStage(),
-  onOpenPuzzle: (puzzleId) => game.openPuzzle(puzzleId),
-  onOpenDoor: () => game.tryOpenDoor(),
+  onStart: () => game.focus(),
 });
 
 if (import.meta.hot) {
