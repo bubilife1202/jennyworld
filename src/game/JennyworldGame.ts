@@ -45,6 +45,8 @@ export class JennyworldGame {
   private readonly obstacleMap: Obstacle[] = [];
   private readonly doorSlots: pc.Entity[] = [];
   private walkCycle = 0;
+  private playerHeight = 0;
+  private verticalVelocity = 0;
   private nearestInteractable: Interactable | null = null;
   private isDoorOpening = false;
   private doorOpenAmount = 0;
@@ -144,6 +146,8 @@ export class JennyworldGame {
     this.isDoorOpening = false;
     this.doorOpenAmount = 0;
     this.timeElapsed = 0;
+    this.playerHeight = 0;
+    this.verticalVelocity = 0;
     this.doorRoot.setLocalPosition(0, 0, -11.45);
     this.playerRoot.setPosition(0, 0, 1.5);
     this.playerRoot.setEulerAngles(0, 180, 0);
@@ -537,6 +541,7 @@ export class JennyworldGame {
     this.timeElapsed += dt;
     this.animateFloaters(dt);
     this.animateDoor(dt);
+    this.updateJumpPhysics(dt);
 
     if (!this.ui.isBlockingGame()) {
       this.updatePlayerMovement(dt);
@@ -551,6 +556,10 @@ export class JennyworldGame {
   }
 
   private updatePlayerMovement(dt: number): void {
+    if (this.ui.consumeJumpRequest() && this.playerHeight <= 0.001) {
+      this.verticalVelocity = 7.8;
+    }
+
     const keyboard = this.app.keyboard;
     const joystick = this.ui.getMoveVector();
     const moveX =
@@ -573,7 +582,11 @@ export class JennyworldGame {
 
     const position = this.playerRoot.getPosition().clone();
     const speed = 5.9;
-    const candidate = new pc.Vec3(position.x + input.x * speed * dt, 0, position.z + input.z * speed * dt);
+    const candidate = new pc.Vec3(
+      position.x + input.x * speed * dt,
+      this.playerHeight,
+      position.z + input.z * speed * dt,
+    );
 
     candidate.x = pc.math.clamp(candidate.x, -10.7, 10.7);
     candidate.z = pc.math.clamp(candidate.z, -10.9, 10.7);
@@ -590,7 +603,7 @@ export class JennyworldGame {
       }
     });
 
-    this.playerRoot.setPosition(candidate.x, 0, candidate.z);
+    this.playerRoot.setPosition(candidate.x, this.playerHeight, candidate.z);
     const targetYaw = Math.atan2(input.x, input.z) * pc.math.RAD_TO_DEG;
     const currentYaw = this.playerRoot.getEulerAngles().y;
     const nextYaw = pc.math.lerpAngle(currentYaw, targetYaw, 0.18);
@@ -649,21 +662,38 @@ export class JennyworldGame {
     this.camera.setPosition(next);
     this.camera.lookAt(
       playerPosition.x * (isPortrait ? 0.72 : 0.08),
-      1.8,
+      1.8 + this.playerHeight * 0.45,
       isPortrait ? playerPosition.z * 0.22 : 0,
     );
   }
 
   private animateAvatar(dt: number): void {
     const moving = !this.ui.isBlockingGame() && this.walkCycle > 0.05;
+    const airborne = this.playerHeight > 0.02;
     const swing = moving ? Math.sin(this.walkCycle) * 18 : 0;
-    this.playerRoot.findByName('player-arm-left')?.setLocalEulerAngles(swing, 0, 0);
-    this.playerRoot.findByName('player-arm-right')?.setLocalEulerAngles(-swing, 0, 0);
-    this.playerRoot.findByName('player-leg-left')?.setLocalEulerAngles(-swing, 0, 0);
-    this.playerRoot.findByName('player-leg-right')?.setLocalEulerAngles(swing, 0, 0);
+    this.playerRoot.findByName('player-arm-left')?.setLocalEulerAngles(airborne ? -28 : swing, 0, 0);
+    this.playerRoot.findByName('player-arm-right')?.setLocalEulerAngles(airborne ? -28 : -swing, 0, 0);
+    this.playerRoot.findByName('player-leg-left')?.setLocalEulerAngles(airborne ? 18 : -swing, 0, 0);
+    this.playerRoot.findByName('player-leg-right')?.setLocalEulerAngles(airborne ? 18 : swing, 0, 0);
 
     if (!moving) {
       this.walkCycle = Math.max(0, this.walkCycle - dt * 4);
+    }
+  }
+
+  private updateJumpPhysics(dt: number): void {
+    const gravity = 18;
+    this.verticalVelocity -= gravity * dt;
+    this.playerHeight += this.verticalVelocity * dt;
+
+    if (this.playerHeight <= 0) {
+      this.playerHeight = 0;
+      this.verticalVelocity = 0;
+    }
+
+    const position = this.playerRoot.getPosition();
+    if (position.y !== this.playerHeight) {
+      this.playerRoot.setPosition(position.x, this.playerHeight, position.z);
     }
   }
 
