@@ -59,7 +59,7 @@ export class OverlayUI {
   private introVisible = true;
   private modalVisible = false;
   private clearVisible = false;
-  private autoStarted = false;
+  private autoStartPending = false;
 
   constructor(mount: HTMLElement) {
     mount.innerHTML = `
@@ -195,14 +195,18 @@ export class OverlayUI {
     this.resetButton = mount.querySelector<HTMLButtonElement>('.reset-button')!;
 
     this.bindEvents();
-    this.maybeAutoStartForLandscape();
+    this.autoStartPending = this.shouldAutoStartForLandscape();
     this.setProgress(0, 4);
   }
 
   setHandlers(handlers: OverlayHandlers): void {
     this.handlers = handlers;
-    if (this.autoStarted) {
-      this.handlers.onStart?.();
+    if (this.autoStartPending) {
+      window.setTimeout(() => {
+        this.introVisible = false;
+        this.introOverlay.classList.add('is-hidden');
+        this.handlers.onStart?.();
+      }, 180);
     }
   }
 
@@ -373,16 +377,10 @@ export class OverlayUI {
     this.joystick.addEventListener('pointercancel', releaseJoystick);
   }
 
-  private maybeAutoStartForLandscape(): void {
+  private shouldAutoStartForLandscape(): boolean {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const isLandscape = window.innerWidth > window.innerHeight;
-    if (!isTouchDevice || !isLandscape) {
-      return;
-    }
-
-    this.introVisible = false;
-    this.autoStarted = true;
-    this.introOverlay.classList.add('is-hidden');
+    return isTouchDevice && isLandscape;
   }
 
   private updateJoystick(clientX: number, clientY: number): void {
