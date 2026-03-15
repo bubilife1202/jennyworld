@@ -15,29 +15,30 @@ import {
   type MemoryButton,
   type ShapeButton,
 } from './puzzles';
-import type { PromptState, PuzzleId } from './types';
+import type { ProgressState, PuzzleId } from './types';
 
 interface OverlayHandlers {
-  onAction?: () => void;
   onReset?: () => void;
   onStart?: () => void;
+  onOpenPuzzle?: (puzzleId: PuzzleId) => void;
+  onOpenDoor?: () => void;
 }
 
-type MoveVector = {
-  x: number;
-  y: number;
+const PUZZLE_BUTTON_META: Record<PuzzleId, { label: string; emoji: string }> = {
+  colors: { label: '색 버튼', emoji: '🌈' },
+  shapes: { label: '도형 자물쇠', emoji: '🔺' },
+  count: { label: '연필 세기', emoji: '✏️' },
+  memory: { label: '기억 퍼즐', emoji: '✨' },
 };
 
 export class OverlayUI {
   readonly canvas: HTMLCanvasElement;
 
   private handlers: OverlayHandlers = {};
+  private readonly stageNote: HTMLDivElement;
+  private readonly stageDock: HTMLDivElement;
   private readonly objectiveTitle: HTMLParagraphElement;
   private readonly objectiveDetail: HTMLParagraphElement;
-  private readonly actionButton: HTMLButtonElement;
-  private readonly promptPanel: HTMLDivElement;
-  private readonly promptTitle: HTMLParagraphElement;
-  private readonly promptDetail: HTMLParagraphElement;
   private readonly starsCount: HTMLParagraphElement;
   private readonly starDots: HTMLSpanElement[];
   private readonly modalBackdrop: HTMLDivElement;
@@ -49,16 +50,11 @@ export class OverlayUI {
   private readonly startButton: HTMLButtonElement;
   private readonly clearOverlay: HTMLDivElement;
   private readonly replayButton: HTMLButtonElement;
-  private readonly joystick: HTMLDivElement;
-  private readonly joystickKnob: HTMLDivElement;
   private readonly resetButton: HTMLButtonElement;
-  private moveVector: MoveVector = { x: 0, y: 0 };
-  private joystickPointerId: number | null = null;
+  private readonly puzzleButtons: Record<PuzzleId, HTMLButtonElement>;
+  private readonly doorButton: HTMLButtonElement;
   private toastTimer: number | null = null;
   private activeTimers: number[] = [];
-  private introVisible = true;
-  private modalVisible = false;
-  private clearVisible = false;
 
   constructor(mount: HTMLElement) {
     mount.innerHTML = `
@@ -86,22 +82,48 @@ export class OverlayUI {
             </div>
           </div>
 
-          <section class="hud-card objective-card">
-            <p class="objective-title">별 조각을 모으자</p>
-            <p class="objective-detail">교실 네 곳의 퍼즐을 하나씩 풀면 문이 열린다.</p>
+          <section class="hud-card stage-note">
+            <p class="objective-title">퍼즐 버튼을 누르자</p>
+            <p class="objective-detail">아래 큰 버튼 네 개로 퍼즐을 차례대로 열고, 별을 모두 모으면 무지개 문을 열 수 있다.</p>
           </section>
 
-          <section class="hud-card prompt-panel is-hidden">
-            <p class="prompt-label">근처 상호작용</p>
-            <p class="prompt-title"></p>
-            <p class="prompt-detail"></p>
+          <section class="hud-card stage-dock" aria-label="퍼즐 스테이션">
+            <button class="station-button" data-puzzle="colors" type="button">
+              <span class="station-emoji">🌈</span>
+              <span class="station-text">
+                <strong>색 버튼</strong>
+                <small>빨강, 파랑, 노랑 순서</small>
+              </span>
+            </button>
+            <button class="station-button" data-puzzle="shapes" type="button">
+              <span class="station-emoji">🔺</span>
+              <span class="station-text">
+                <strong>도형 자물쇠</strong>
+                <small>원, 세모, 네모 맞추기</small>
+              </span>
+            </button>
+            <button class="station-button" data-puzzle="count" type="button">
+              <span class="station-emoji">✏️</span>
+              <span class="station-text">
+                <strong>연필 세기</strong>
+                <small>책상 위 연필 개수</small>
+              </span>
+            </button>
+            <button class="station-button" data-puzzle="memory" type="button">
+              <span class="station-emoji">✨</span>
+              <span class="station-text">
+                <strong>기억 퍼즐</strong>
+                <small>빛나는 순서 기억하기</small>
+              </span>
+            </button>
+            <button class="door-button" type="button">
+              <span class="station-emoji">🚪</span>
+              <span class="station-text">
+                <strong>무지개 문 열기</strong>
+                <small>별 조각 4개가 모이면 열림</small>
+              </span>
+            </button>
           </section>
-
-          <button class="action-button is-hidden" type="button">살펴보기</button>
-
-          <div class="joystick" aria-label="이동 조이스틱" role="presentation">
-            <div class="joystick-knob"></div>
-          </div>
 
           <div class="modal-backdrop is-hidden">
             <section class="modal-card">
@@ -117,34 +139,17 @@ export class OverlayUI {
 
           <div class="intro-overlay">
             <section class="intro-card">
-              <div class="intro-grid">
-                <div class="intro-hero">
-                  <p class="eyebrow">Welcome To Jennyworld</p>
-                  <h1>방 하나를 탈출해 보자</h1>
-                  <p>무지개 교실에서 별 조각 네 개를 모으면 다음 스테이지로 갈 수 있다.</p>
-                  <div class="intro-badges">
-                    <span class="intro-badge">로블록스 감성 3D</span>
-                    <span class="intro-badge">모바일 가로 모드</span>
-                    <span class="intro-badge">초등 3학년 난이도</span>
-                  </div>
+              <p class="eyebrow">Start Jennyworld</p>
+              <h2 class="intro-title">모바일에서 바로 시작할 수 있게 다시 정리했어.</h2>
+              <p class="intro-text">아래 퍼즐 버튼을 눌러 별 조각 4개를 모으고 무지개 문을 열면 된다. 가로 화면이 더 보기 좋지만, 세로에서도 바로 시작할 수 있다.</p>
+              <div class="intro-row">
+                <div class="intro-tip">
+                  <strong>플레이 방법</strong>
+                  <span>1. 퍼즐 버튼 누르기</span>
+                  <span>2. 문제 풀기</span>
+                  <span>3. 문 열기</span>
                 </div>
-                <div class="intro-info">
-                  <section class="info-card">
-                    <h2>어떻게 놀까?</h2>
-                    <p>왼쪽 조이스틱으로 움직이고, 가까이 가면 오른쪽 버튼으로 퍼즐을 연다.</p>
-                    <ul class="info-list">
-                      <li>색 순서 맞추기</li>
-                      <li>도형 자물쇠 바꾸기</li>
-                      <li>연필 개수 세기</li>
-                      <li>빛나는 순서 기억하기</li>
-                    </ul>
-                  </section>
-                  <section class="info-card">
-                    <h2>힌트</h2>
-                    <p>실패해도 다시 할 수 있다. 방 안의 색, 모양, 소품을 잘 보면 답이 보인다.</p>
-                  </section>
-                  <button class="primary-button intro-start" type="button">탐험 시작</button>
-                </div>
+                <button class="primary-button intro-start" type="button">게임 시작</button>
               </div>
             </section>
           </div>
@@ -153,31 +158,25 @@ export class OverlayUI {
             <section class="clear-card">
               <p class="eyebrow">Stage Clear</p>
               <h2 class="clear-title">무지개 교실 탈출 성공</h2>
-              <p class="clear-text">별 조각 네 개를 모아 문을 열었다. 다음에는 캔디 놀이터를 만들 수 있다.</p>
+              <p class="clear-text">별 조각 네 개를 모아 문을 열었다. 다음 스테이지로 이어서 확장할 수 있다.</p>
               <div class="clear-stars" aria-hidden="true">
                 <span class="clear-star"></span>
                 <span class="clear-star"></span>
                 <span class="clear-star"></span>
                 <span class="clear-star"></span>
               </div>
-              <div class="button-row" style="justify-content:center">
-                <button class="primary-button clear-replay" type="button">같은 방 다시 하기</button>
-              </div>
+              <button class="primary-button clear-replay" type="button">같은 방 다시 하기</button>
             </section>
           </div>
-
-          <div class="rotate-note">모바일에서는 화면을 가로로 돌리면 더 잘 보여요.</div>
         </div>
       </div>
     `;
 
     this.canvas = mount.querySelector<HTMLCanvasElement>('.game-canvas')!;
+    this.stageNote = mount.querySelector<HTMLDivElement>('.stage-note')!;
+    this.stageDock = mount.querySelector<HTMLDivElement>('.stage-dock')!;
     this.objectiveTitle = mount.querySelector<HTMLParagraphElement>('.objective-title')!;
     this.objectiveDetail = mount.querySelector<HTMLParagraphElement>('.objective-detail')!;
-    this.actionButton = mount.querySelector<HTMLButtonElement>('.action-button')!;
-    this.promptPanel = mount.querySelector<HTMLDivElement>('.prompt-panel')!;
-    this.promptTitle = mount.querySelector<HTMLParagraphElement>('.prompt-title')!;
-    this.promptDetail = mount.querySelector<HTMLParagraphElement>('.prompt-detail')!;
     this.starsCount = mount.querySelector<HTMLParagraphElement>('.stars-count')!;
     this.starDots = Array.from(mount.querySelectorAll<HTMLSpanElement>('.star-dot'));
     this.modalBackdrop = mount.querySelector<HTMLDivElement>('.modal-backdrop')!;
@@ -189,9 +188,14 @@ export class OverlayUI {
     this.startButton = mount.querySelector<HTMLButtonElement>('.intro-start')!;
     this.clearOverlay = mount.querySelector<HTMLDivElement>('.clear-overlay')!;
     this.replayButton = mount.querySelector<HTMLButtonElement>('.clear-replay')!;
-    this.joystick = mount.querySelector<HTMLDivElement>('.joystick')!;
-    this.joystickKnob = mount.querySelector<HTMLDivElement>('.joystick-knob')!;
     this.resetButton = mount.querySelector<HTMLButtonElement>('.reset-button')!;
+    this.doorButton = mount.querySelector<HTMLButtonElement>('.door-button')!;
+    this.puzzleButtons = {
+      colors: mount.querySelector<HTMLButtonElement>('[data-puzzle="colors"]')!,
+      shapes: mount.querySelector<HTMLButtonElement>('[data-puzzle="shapes"]')!,
+      count: mount.querySelector<HTMLButtonElement>('[data-puzzle="count"]')!,
+      memory: mount.querySelector<HTMLButtonElement>('[data-puzzle="memory"]')!,
+    };
 
     this.bindEvents();
     this.setProgress(0, 4);
@@ -201,12 +205,8 @@ export class OverlayUI {
     this.handlers = handlers;
   }
 
-  getMoveVector(): MoveVector {
-    return this.moveVector;
-  }
-
-  isBlockingGame(): boolean {
-    return this.introVisible || this.modalVisible || this.clearVisible;
+  focusCanvas(): void {
+    this.canvas.focus?.();
   }
 
   setProgress(count: number, total: number): void {
@@ -221,18 +221,36 @@ export class OverlayUI {
     this.objectiveDetail.textContent = detail;
   }
 
-  setPrompt(prompt: PromptState | null): void {
-    if (!prompt || this.isBlockingGame()) {
-      this.promptPanel.classList.add('is-hidden');
-      this.actionButton.classList.add('is-hidden');
-      return;
-    }
+  setStageState(progress: ProgressState): void {
+    let solvedCount = 0;
 
-    this.promptTitle.textContent = prompt.title;
-    this.promptDetail.textContent = prompt.detail;
-    this.actionButton.textContent = prompt.actionLabel;
-    this.promptPanel.classList.remove('is-hidden');
-    this.actionButton.classList.remove('is-hidden');
+    (Object.keys(this.puzzleButtons) as PuzzleId[]).forEach((puzzleId) => {
+      const solved = progress[puzzleId];
+      solvedCount += Number(solved);
+      const button = this.puzzleButtons[puzzleId];
+      const meta = PUZZLE_BUTTON_META[puzzleId];
+      button.classList.toggle('is-solved', solved);
+      button.disabled = solved;
+      button.querySelector('strong')!.textContent = solved ? `${meta.label} 완료` : meta.label;
+      button.querySelector('small')!.textContent = solved ? '별 조각 획득 완료' : button.dataset.puzzle === 'colors'
+        ? '빨강, 파랑, 노랑 순서'
+        : button.dataset.puzzle === 'shapes'
+          ? '원, 세모, 네모 맞추기'
+          : button.dataset.puzzle === 'count'
+            ? '책상 위 연필 개수'
+            : '빛나는 순서 기억하기';
+    });
+
+    const canOpenDoor = solvedCount === 4 && !progress.cleared;
+    this.doorButton.disabled = !canOpenDoor;
+    this.doorButton.classList.toggle('is-ready', canOpenDoor);
+    this.doorButton.classList.toggle('is-solved', progress.cleared);
+    this.doorButton.querySelector('strong')!.textContent = progress.cleared ? '문 열기 완료' : '무지개 문 열기';
+    this.doorButton.querySelector('small')!.textContent = progress.cleared
+      ? '스테이지 클리어'
+      : canOpenDoor
+        ? '별 조각이 다 모였다'
+        : '별 조각 4개가 모이면 열림';
   }
 
   showToast(message: string): void {
@@ -246,33 +264,29 @@ export class OverlayUI {
     this.toastTimer = window.setTimeout(() => {
       this.toast.classList.add('is-hidden');
       this.toastTimer = null;
-    }, 2200);
+    }, 2400);
   }
 
   showDoorLocked(missingStars: number): void {
-    const suffix = missingStars === 1 ? '1개' : `${missingStars}개`;
-    this.showToast(`별 조각이 ${suffix} 더 필요해.`);
+    this.showToast(`별 조각이 ${missingStars}개 더 필요해.`);
   }
 
   showClear(): void {
-    this.clearVisible = true;
     this.clearOverlay.classList.remove('is-hidden');
-    this.setPrompt(null);
   }
 
   hideClear(): void {
-    this.clearVisible = false;
     this.clearOverlay.classList.add('is-hidden');
   }
 
   openPuzzle(puzzleId: PuzzleId, onSolved: () => void): void {
     const definition = PUZZLE_DEFINITIONS[puzzleId];
     this.clearTimers();
-    this.modalVisible = true;
+    this.stageNote.classList.add('is-hidden-ui');
+    this.stageDock.classList.add('is-hidden-ui');
     this.modalBackdrop.classList.remove('is-hidden');
     this.modalTitle.textContent = definition.title;
     this.modalClose.hidden = false;
-    this.setPrompt(null);
 
     switch (puzzleId) {
       case 'colors':
@@ -292,24 +306,21 @@ export class OverlayUI {
 
   closeModal(): void {
     this.clearTimers();
-    this.modalVisible = false;
+    this.stageNote.classList.remove('is-hidden-ui');
+    this.stageDock.classList.remove('is-hidden-ui');
     this.modalBackdrop.classList.add('is-hidden');
     this.modalBody.replaceChildren();
   }
 
   private bindEvents(): void {
-    this.actionButton.addEventListener('click', () => {
-      this.handlers.onAction?.();
-    });
-
     this.modalClose.addEventListener('click', () => {
       this.closeModal();
     });
 
     this.startButton.addEventListener('click', () => {
-      this.introVisible = false;
       this.introOverlay.classList.add('is-hidden');
       this.handlers.onStart?.();
+      this.focusCanvas();
     });
 
     this.replayButton.addEventListener('click', () => {
@@ -323,61 +334,21 @@ export class OverlayUI {
       this.handlers.onReset?.();
     });
 
+    this.doorButton.addEventListener('click', () => {
+      this.handlers.onOpenDoor?.();
+    });
+
+    (Object.keys(this.puzzleButtons) as PuzzleId[]).forEach((puzzleId) => {
+      this.puzzleButtons[puzzleId].addEventListener('click', () => {
+        this.handlers.onOpenPuzzle?.(puzzleId);
+      });
+    });
+
     this.modalBackdrop.addEventListener('click', (event) => {
       if (event.target === this.modalBackdrop) {
         this.closeModal();
       }
     });
-
-    this.joystick.addEventListener('pointerdown', (event) => {
-      this.joystickPointerId = event.pointerId;
-      this.joystick.setPointerCapture(event.pointerId);
-      this.updateJoystick(event.clientX, event.clientY);
-    });
-
-    this.joystick.addEventListener('pointermove', (event) => {
-      if (this.joystickPointerId !== event.pointerId) {
-        return;
-      }
-
-      this.updateJoystick(event.clientX, event.clientY);
-    });
-
-    const releaseJoystick = (event: PointerEvent) => {
-      if (this.joystickPointerId !== event.pointerId) {
-        return;
-      }
-
-      this.joystickPointerId = null;
-      this.moveVector = { x: 0, y: 0 };
-      this.joystickKnob.style.transform = 'translate(-50%, -50%)';
-    };
-
-    this.joystick.addEventListener('pointerup', releaseJoystick);
-    this.joystick.addEventListener('pointercancel', releaseJoystick);
-  }
-
-  private updateJoystick(clientX: number, clientY: number): void {
-    const rect = this.joystick.getBoundingClientRect();
-    const radius = rect.width * 0.34;
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    let dx = clientX - centerX;
-    let dy = clientY - centerY;
-    const distance = Math.hypot(dx, dy);
-
-    if (distance > radius) {
-      const scale = radius / distance;
-      dx *= scale;
-      dy *= scale;
-    }
-
-    this.moveVector = {
-      x: Number((dx / radius).toFixed(3)),
-      y: Number((dy / radius).toFixed(3)),
-    };
-
-    this.joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   }
 
   private renderColorPuzzle(onSolved: () => void): void {
@@ -408,11 +379,6 @@ export class OverlayUI {
       });
     };
 
-    const completePuzzle = (): void => {
-      onSolved();
-      this.renderSolvedState(definition.success);
-    };
-
     COLOR_SEQUENCE.forEach((color) => {
       const button = document.createElement('button');
       button.className = 'puzzle-button';
@@ -425,7 +391,8 @@ export class OverlayUI {
           feedback.textContent = `${COLOR_LABELS[color]} 좋아!`;
           updatePreview();
           if (progress === COLOR_SEQUENCE.length) {
-            completePuzzle();
+            onSolved();
+            this.renderSolvedState(definition.success);
           }
           return;
         }
@@ -461,12 +428,8 @@ export class OverlayUI {
     const feedback = this.createFeedback('칸을 눌러서 원하는 도형으로 바꿔 보자.');
 
     const cycleShape = (shape: ShapeButton): ShapeButton => {
-      if (shape === 'circle') {
-        return 'triangle';
-      }
-      if (shape === 'triangle') {
-        return 'square';
-      }
+      if (shape === 'circle') return 'triangle';
+      if (shape === 'triangle') return 'square';
       return 'circle';
     };
 
@@ -478,11 +441,6 @@ export class OverlayUI {
       });
     };
 
-    const completePuzzle = (): void => {
-      onSolved();
-      this.renderSolvedState(definition.success);
-    };
-
     const slotButtons = currentShapes.map((shape, index) => {
       const button = document.createElement('button');
       button.className = 'shape-slot';
@@ -491,9 +449,9 @@ export class OverlayUI {
       button.addEventListener('click', () => {
         currentShapes[index] = cycleShape(currentShapes[index]);
         updateSlots();
-
         if (currentShapes.every((current, currentIndex) => current === SHAPE_ORDER[currentIndex])) {
-          completePuzzle();
+          onSolved();
+          this.renderSolvedState(definition.success);
         } else {
           feedback.textContent = '도형이 맞아 가고 있어. 목표 칸을 확인하자.';
         }
@@ -512,16 +470,11 @@ export class OverlayUI {
     const wrapper = this.createPuzzleWrapper(definition.subtitle, definition.hint);
     const note = document.createElement('div');
     note.className = 'puzzle-note';
-    note.textContent = '교실 뒤쪽 책상 위에 있는 노란 연필 꾸러미를 세어 보자.';
+    note.textContent = '방 안에서 보이는 노란 연필은 모두 몇 개일까?';
 
     const choices = document.createElement('div');
     choices.className = 'choice-grid';
     const feedback = this.createFeedback('숫자를 하나 골라 보자.');
-
-    const completePuzzle = (): void => {
-      onSolved();
-      this.renderSolvedState(definition.success);
-    };
 
     COUNTING_OPTIONS.forEach((value) => {
       const button = document.createElement('button');
@@ -530,7 +483,8 @@ export class OverlayUI {
       button.textContent = `${value}`;
       button.addEventListener('click', () => {
         if (value === COUNTING_ANSWER) {
-          completePuzzle();
+          onSolved();
+          this.renderSolvedState(definition.success);
         } else {
           feedback.textContent = '다시 한 번 천천히 세어 보자.';
         }
@@ -551,7 +505,6 @@ export class OverlayUI {
 
     const buttons = document.createElement('div');
     buttons.className = 'memory-grid';
-
     const buttonMap = new Map<MemoryButton, HTMLButtonElement>();
     let progress = 0;
     let isPlayback = true;
@@ -602,11 +555,6 @@ export class OverlayUI {
       this.activeTimers.push(finish);
     };
 
-    const completePuzzle = (): void => {
-      onSolved();
-      this.renderSolvedState(definition.success);
-    };
-
     MEMORY_SEQUENCE.forEach((color) => {
       const button = document.createElement('button');
       button.className = 'memory-button';
@@ -614,15 +562,13 @@ export class OverlayUI {
       button.dataset.color = color;
       button.textContent = MEMORY_LABELS[color];
       button.addEventListener('click', () => {
-        if (isPlayback) {
-          return;
-        }
-
+        if (isPlayback) return;
         if (MEMORY_SEQUENCE[progress] === color) {
           progress += 1;
           feedback.textContent = `${MEMORY_LABELS[color]} 좋아!`;
           if (progress === MEMORY_SEQUENCE.length) {
-            completePuzzle();
+            onSolved();
+            this.renderSolvedState(definition.success);
           }
           return;
         }
@@ -676,12 +622,12 @@ export class OverlayUI {
 
     const followUp = document.createElement('p');
     followUp.className = 'modal-text';
-    followUp.textContent = '별 조각이 인벤토리에 들어갔다. 계속 탐험하자.';
+    followUp.textContent = '별 조각이 인벤토리에 들어갔다. 아래 버튼으로 다음 퍼즐을 열자.';
 
     const closeButton = document.createElement('button');
     closeButton.className = 'primary-button';
     closeButton.type = 'button';
-    closeButton.textContent = '계속 탐험하기';
+    closeButton.textContent = '계속하기';
     closeButton.addEventListener('click', () => {
       this.closeModal();
     });

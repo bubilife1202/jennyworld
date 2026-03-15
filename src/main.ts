@@ -12,9 +12,10 @@ const ui = new OverlayUI(mount);
 const game = new JennyworldGame(ui.canvas, ui);
 
 ui.setHandlers({
-  onAction: () => game.handleAction(),
-  onReset: () => game.resetStage(),
   onStart: () => game.focus(),
+  onReset: () => game.resetStage(),
+  onOpenPuzzle: (puzzleId) => game.openPuzzle(puzzleId),
+  onOpenDoor: () => game.tryOpenDoor(),
 });
 
 if (import.meta.hot) {
