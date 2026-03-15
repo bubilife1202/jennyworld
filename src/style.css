@@ -395,6 +395,12 @@ button {
   box-shadow: 0 24px 80px rgba(14, 20, 42, 0.2);
 }
 
+.modal-card {
+  max-height: calc(100dvh - 1.5rem);
+  display: flex;
+  flex-direction: column;
+}
+
 .modal-card,
 .intro-card,
 .clear-card,
@@ -539,6 +545,8 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .puzzle-note,
@@ -598,6 +606,11 @@ button {
   border: 0;
   border-radius: 20px;
   min-height: 4.4rem;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   cursor: pointer;
   transition:
     transform 140ms ease,
@@ -876,6 +889,37 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .modal-card {
+    width: min(96vw, 26rem);
+    padding: 0.95rem;
+    max-height: calc(100dvh - 1rem);
+  }
+
+  .modal-header {
+    gap: 0.65rem;
+  }
+
+  .modal-title {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .modal-text,
+  .puzzle-note,
+  .feedback-chip,
+  .hint-box,
+  .memory-status,
+  .success-box {
+    font-size: 0.92rem;
+    line-height: 1.35;
+  }
+
+  .modal-close {
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+  }
+
   .eyebrow,
   .brand-subtitle,
   .objective-card,
@@ -914,6 +958,16 @@ button {
   .prompt-title {
     margin-top: 0.12rem;
     font-size: 0.95rem;
+  }
+
+  .sequence-slot,
+  .shape-slot,
+  .puzzle-button,
+  .choice-button,
+  .memory-button {
+    min-height: 3.8rem;
+    font-size: 1rem;
+    padding: 0.7rem 0.85rem;
   }
 
   .action-button {
