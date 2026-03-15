@@ -27,6 +27,11 @@ type MoveVector = {
   y: number;
 };
 
+type LookDelta = {
+  x: number;
+  y: number;
+};
+
 export class OverlayUI {
   readonly canvas: HTMLCanvasElement;
 
@@ -48,9 +53,15 @@ export class OverlayUI {
   private readonly replayButton: HTMLButtonElement;
   private readonly joystick: HTMLDivElement;
   private readonly joystickKnob: HTMLDivElement;
+  private readonly lookZone: HTMLDivElement;
+  private readonly jumpButton: HTMLButtonElement;
   private readonly resetButton: HTMLButtonElement;
   private moveVector: MoveVector = { x: 0, y: 0 };
+  private lookDelta: LookDelta = { x: 0, y: 0 };
   private joystickPointerId: number | null = null;
+  private lookPointerId: number | null = null;
+  private lastLookPoint: { x: number; y: number } | null = null;
+  private jumpQueued = false;
   private toastTimer: number | null = null;
   private activeTimers: number[] = [];
   private modalVisible = false;
@@ -84,7 +95,7 @@ export class OverlayUI {
 
           <section class="hud-card objective-card">
             <p class="objective-title">별 조각을 모으자</p>
-            <p class="objective-detail">교실 네 곳의 퍼즐을 하나씩 풀면 문이 열린다.</p>
+            <p class="objective-detail">조이스틱으로 움직이고, 오브젝트 가까이 가면 상호작용 버튼이 나타난다.</p>
           </section>
 
           <section class="hud-card prompt-panel is-hidden">
@@ -93,10 +104,17 @@ export class OverlayUI {
             <p class="prompt-detail"></p>
           </section>
 
-          <button class="action-button is-hidden" type="button">살펴보기</button>
+          <button class="action-button is-hidden" type="button">상호작용</button>
 
           <div class="joystick" aria-label="이동 조이스틱" role="presentation">
             <div class="joystick-knob"></div>
+          </div>
+
+          <div class="control-cluster">
+            <button class="jump-button" type="button">점프</button>
+            <div class="look-zone" aria-label="시점 조작 영역">
+              <span>시점 드래그</span>
+            </div>
           </div>
 
           <div class="modal-backdrop is-hidden">
@@ -127,8 +145,6 @@ export class OverlayUI {
               </div>
             </section>
           </div>
-
-          <div class="rotate-note">모바일에서는 화면을 가로로 돌리면 더 잘 보여요.</div>
         </div>
       </div>
     `;
@@ -151,6 +167,8 @@ export class OverlayUI {
     this.replayButton = mount.querySelector<HTMLButtonElement>('.clear-replay')!;
     this.joystick = mount.querySelector<HTMLDivElement>('.joystick')!;
     this.joystickKnob = mount.querySelector<HTMLDivElement>('.joystick-knob')!;
+    this.lookZone = mount.querySelector<HTMLDivElement>('.look-zone')!;
+    this.jumpButton = mount.querySelector<HTMLButtonElement>('.jump-button')!;
     this.resetButton = mount.querySelector<HTMLButtonElement>('.reset-button')!;
 
     this.bindEvents();
@@ -161,16 +179,28 @@ export class OverlayUI {
     this.handlers = handlers;
   }
 
+  focusCanvas(): void {
+    this.canvas.focus?.();
+  }
+
   getMoveVector(): MoveVector {
     return this.moveVector;
   }
 
-  isBlockingGame(): boolean {
-    return this.modalVisible || this.clearVisible;
+  consumeLookDelta(): LookDelta {
+    const current = { ...this.lookDelta };
+    this.lookDelta = { x: 0, y: 0 };
+    return current;
   }
 
-  focusCanvas(): void {
-    this.canvas.focus?.();
+  consumeJumpRequest(): boolean {
+    const shouldJump = this.jumpQueued;
+    this.jumpQueued = false;
+    return shouldJump;
+  }
+
+  isBlockingGame(): boolean {
+    return this.modalVisible || this.clearVisible;
   }
 
   setProgress(count: number, total: number): void {
@@ -210,12 +240,11 @@ export class OverlayUI {
     this.toastTimer = window.setTimeout(() => {
       this.toast.classList.add('is-hidden');
       this.toastTimer = null;
-    }, 2200);
+    }, 2400);
   }
 
   showDoorLocked(missingStars: number): void {
-    const suffix = missingStars === 1 ? '1개' : `${missingStars}개`;
-    this.showToast(`별 조각이 ${suffix} 더 필요해.`);
+    this.showToast(`별 조각이 ${missingStars}개 더 필요해.`);
   }
 
   showClear(): void {
@@ -313,6 +342,38 @@ export class OverlayUI {
 
     this.joystick.addEventListener('pointerup', releaseJoystick);
     this.joystick.addEventListener('pointercancel', releaseJoystick);
+
+    this.lookZone.addEventListener('pointerdown', (event) => {
+      this.lookPointerId = event.pointerId;
+      this.lookZone.setPointerCapture(event.pointerId);
+      this.lastLookPoint = { x: event.clientX, y: event.clientY };
+    });
+
+    this.lookZone.addEventListener('pointermove', (event) => {
+      if (this.lookPointerId !== event.pointerId || !this.lastLookPoint) {
+        return;
+      }
+
+      this.lookDelta.x += event.clientX - this.lastLookPoint.x;
+      this.lookDelta.y += event.clientY - this.lastLookPoint.y;
+      this.lastLookPoint = { x: event.clientX, y: event.clientY };
+    });
+
+    const releaseLook = (event: PointerEvent) => {
+      if (this.lookPointerId !== event.pointerId) {
+        return;
+      }
+
+      this.lookPointerId = null;
+      this.lastLookPoint = null;
+    };
+
+    this.lookZone.addEventListener('pointerup', releaseLook);
+    this.lookZone.addEventListener('pointercancel', releaseLook);
+
+    this.jumpButton.addEventListener('click', () => {
+      this.jumpQueued = true;
+    });
   }
 
   private updateJoystick(clientX: number, clientY: number): void {
