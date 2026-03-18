@@ -196,6 +196,36 @@ button {
   box-shadow: var(--shadow);
   font-weight: 700;
   cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease;
+}
+
+.reset-button:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #f7d5c4 100%);
+}
+
+.reset-button:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.modal-close {
+  transition: background 140ms ease, transform 140ms ease;
+}
+
+.modal-close:hover {
+  background: rgba(48, 58, 98, 0.18);
+}
+
+.modal-close:active {
+  transform: scale(0.92);
+}
+
+.secondary-button:hover {
+  background: rgba(55, 78, 138, 0.16);
+}
+
+.jump-button:active {
+  transform: scale(0.94);
+  transition: transform 100ms ease;
 }
 
 .objective-card {

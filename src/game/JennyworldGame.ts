@@ -180,7 +180,7 @@ export class JennyworldGame {
   }
 
   private clearScene(): void {
-    const keep = new Set<pc.Entity>([this.camera]);
+    const keep = new Set<pc.Entity>([this.camera, this.playerRoot, this.doorRoot, this.researchGateRoot]);
     const entitiesToRemove: pc.Entity[] = [];
     this.app.root.children.forEach((child) => {
       if (!keep.has(child as pc.Entity) && child.name !== 'sun' && child.name !== 'fill') {
@@ -193,6 +193,13 @@ export class JennyworldGame {
     this.obstacleMap.length = 0;
     this.puzzleStations.clear();
     this.doorSlots.length = 0;
+
+    // Clear children of reused root entities without destroying the roots
+    [this.playerRoot, this.doorRoot, this.researchGateRoot].forEach((root) => {
+      while (root.children.length > 0) {
+        (root.children[0] as pc.Entity).destroy();
+      }
+    });
   }
 
   focus(): void {
@@ -916,12 +923,14 @@ export class JennyworldGame {
   }
 
   private createCamera(): void {
-    this.camera.addComponent('camera', {
-      clearColor: new pc.Color(0.86, 0.96, 1),
-      fov: 64,
-      farClip: 120,
-      nearClip: 0.2,
-    });
+    if (!this.camera.camera) {
+      this.camera.addComponent('camera', {
+        clearColor: new pc.Color(0.86, 0.96, 1),
+        fov: 64,
+        farClip: 120,
+        nearClip: 0.2,
+      });
+    }
     this.camera.setPosition(0, 7.8, 12.5);
     this.camera.lookAt(0, 1.8, PLAYER_START_Z - 6);
     this.app.root.addChild(this.camera);
@@ -1068,7 +1077,9 @@ export class JennyworldGame {
   private updateHud(): void {
     const playerPosition = this.playerRoot.getPosition();
     const normalize = (value: number, halfSize: number): number => ((value + halfSize) / (halfSize * 2)) * 100;
-    const zoneLabel = playerPosition.z > 6 ? '앞 교실' : playerPosition.z > -8 ? '중앙 통로' : '연구 구역';
+    const zoneLabel = this.currentStage === 1
+      ? (playerPosition.z > 6 ? '앞 교실' : playerPosition.z > -8 ? '중앙 통로' : '연구 구역')
+      : (playerPosition.z > 6 ? '정원 앞쪽' : playerPosition.z > -8 ? '정원 중앙' : '정원 안쪽');
     if (zoneLabel !== this.lastZoneLabel) {
       if (this.lastZoneLabel !== null) {
         this.ui.showZoneBanner(zoneLabel);

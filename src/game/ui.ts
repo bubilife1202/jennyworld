@@ -291,6 +291,10 @@ export class OverlayUI {
 
   setStage(stage: 1 | 2): void {
     this.currentStage = stage;
+    const labelEl = this.canvas.closest('.game-shell')?.querySelector<HTMLSpanElement>('.stars-label');
+    if (labelEl) {
+      labelEl.textContent = stage === 1 ? '모은 별 조각' : '모은 별빛 조각';
+    }
   }
 
   private get stageColorSequence() {
@@ -1281,7 +1285,9 @@ export class OverlayUI {
 
     const followUp = document.createElement('p');
     followUp.className = 'modal-text';
-    followUp.textContent = '별 조각이 인벤토리에 저장됐다. 다음 구역까지 계속 탐험하자.';
+    followUp.textContent = this.currentStage === 1
+      ? '별 조각이 인벤토리에 저장됐다. 다음 구역까지 계속 탐험하자.'
+      : '별빛 조각이 인벤토리에 저장됐다. 다음 구역까지 계속 탐험하자.';
 
     const closeButton = document.createElement('button');
     closeButton.className = 'primary-button';
