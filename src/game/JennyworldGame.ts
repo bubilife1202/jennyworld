@@ -128,6 +128,7 @@ export class JennyworldGame {
   private hintTimer = 0;
   private currentStage: 1 | 2 = 1;
   private isTransitioning = false;
+  private _actionKeyWasDown = false;
 
   constructor(canvas: HTMLCanvasElement, ui: OverlayUI) {
     this.ui = ui;
@@ -1139,6 +1140,12 @@ export class JennyworldGame {
     const jumpKeyDown = keyboard?.isPressed(pc.KEY_SPACE) ?? false;
     const jumpRequested = this.ui.consumeJumpRequest() || (jumpKeyDown && !this.jumpKeyWasDown);
     this.jumpKeyWasDown = jumpKeyDown;
+
+    const actionKeyDown = !!(keyboard?.isPressed(pc.KEY_E) || keyboard?.isPressed(pc.KEY_RETURN));
+    if (actionKeyDown && !this._actionKeyWasDown && !this.ui.isBlockingGame()) {
+      this.handleAction();
+    }
+    this._actionKeyWasDown = actionKeyDown;
     if (jumpRequested && this.playerHeight <= 0.001 && !this.pendingJump) {
       this.pendingJump = true;
       this.jumpCharge = 0.075;

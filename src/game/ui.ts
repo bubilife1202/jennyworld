@@ -1277,9 +1277,28 @@ export class OverlayUI {
     return feedback;
   }
 
+  private playSuccessChime(): void {
+    try {
+      const ctx = new AudioContext();
+      const now = ctx.currentTime;
+      [523.25, 659.25, 783.99].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.18, now + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.4);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.12);
+        osc.stop(now + i * 0.12 + 0.4);
+      });
+    } catch { /* audio not available */ }
+  }
+
   private renderSolvedState(message: string): void {
     this.clearTimers();
     this.modalClose.hidden = true;
+    this.playSuccessChime();
     const success = document.createElement('div');
     success.className = 'success-box';
     success.textContent = message;
