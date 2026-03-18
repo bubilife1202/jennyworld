@@ -277,9 +277,10 @@ export class JennyworldGame {
     if (target.kind === 'door') {
       const missing = PUZZLE_IDS.length - countSolvedPuzzles(this.progress);
       if (missing > 0) {
+        const defs = this.currentStage === 1 ? PUZZLE_DEFINITIONS : STAGE_2_DEFINITIONS;
         const unsolved = PUZZLE_IDS.filter((puzzleId) => !this.progress[puzzleId])
           .slice(0, 2)
-          .map((puzzleId) => PUZZLE_DEFINITIONS[puzzleId].title)
+          .map((puzzleId) => defs[puzzleId].title)
           .join(', ');
         this.ui.showToast(`아직 ${unsolved}${missing > 2 ? ' 외 퍼즐' : ''}이 남아 있어.`);
         return;
@@ -1103,10 +1104,11 @@ export class JennyworldGame {
     });
 
     const solvedCount = countSolvedPuzzles(this.progress);
+    const backZone = this.currentStage === 1 ? '연구 구역' : '정원 안쪽';
     const targetPosition =
       solvedCount >= PUZZLE_IDS.length
         ? this.doorRoot.getPosition()
-        : solvedCount >= 3 && zoneLabel !== '연구 구역'
+        : solvedCount >= 3 && zoneLabel !== backZone
           ? this.researchGateRoot.getPosition()
           : null;
 

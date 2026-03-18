@@ -1297,6 +1297,9 @@ export class OverlayUI {
         osc.connect(gain).connect(ctx.destination);
         osc.start(now + i * 0.12);
         osc.stop(now + i * 0.12 + 0.4);
+        if (i === 2) {
+          osc.onended = () => { void ctx.close(); };
+        }
       });
     } catch { /* audio not available */ }
   }
