@@ -385,6 +385,7 @@ button {
   width: 0.85rem;
   height: 0.85rem;
   background: #2f67ff;
+  will-change: left, top;
   box-shadow: 0 0 12px rgba(47, 103, 255, 0.38);
 }
 

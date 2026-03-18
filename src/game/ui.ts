@@ -30,6 +30,9 @@ import {
   STAGE_2_SWITCH_TARGET,
   STAGE_2_DEFINITIONS,
   STAGE_2_FINAL_DOOR_ANSWER,
+  STAGE_2_FINAL_DOOR_COLOR_CHOICES,
+  STAGE_2_FINAL_DOOR_SHAPE_CHOICES,
+  STAGE_2_FINAL_DOOR_NOTE_CHOICES,
   SWITCH_LINKED,
   STAGE_2_SWITCH_LINKED,
   type MemoryButton,
@@ -320,6 +323,15 @@ export class OverlayUI {
   private get stageFinalDoorAnswer() {
     return this.currentStage === 1 ? FINAL_DOOR_ANSWER : STAGE_2_FINAL_DOOR_ANSWER;
   }
+  private get stageFinalDoorColorChoices() {
+    return this.currentStage === 1 ? FINAL_DOOR_COLOR_CHOICES : STAGE_2_FINAL_DOOR_COLOR_CHOICES;
+  }
+  private get stageFinalDoorShapeChoices() {
+    return this.currentStage === 1 ? FINAL_DOOR_SHAPE_CHOICES : STAGE_2_FINAL_DOOR_SHAPE_CHOICES;
+  }
+  private get stageFinalDoorNoteChoices() {
+    return this.currentStage === 1 ? FINAL_DOOR_NOTE_CHOICES : STAGE_2_FINAL_DOOR_NOTE_CHOICES;
+  }
 
   focusCanvas(): void {
     this.canvas.focus?.();
@@ -333,10 +345,13 @@ export class OverlayUI {
     return this.moveVector;
   }
 
+  private readonly _consumedLookDelta: LookDelta = { x: 0, y: 0 };
   consumeLookDelta(): LookDelta {
-    const current = { ...this.lookDelta };
-    this.lookDelta = { x: 0, y: 0 };
-    return current;
+    this._consumedLookDelta.x = this.lookDelta.x;
+    this._consumedLookDelta.y = this.lookDelta.y;
+    this.lookDelta.x = 0;
+    this.lookDelta.y = 0;
+    return this._consumedLookDelta;
   }
 
   consumeJumpRequest(): boolean {
@@ -460,14 +475,6 @@ export class OverlayUI {
       this.toast.classList.add('is-hidden');
       this.toastTimer = null;
     }, 2400);
-  }
-
-  showDoorLocked(missingStars: number): void {
-    this.showToast(`별 조각이 ${missingStars}개 더 필요해.`);
-  }
-
-  showResearchGateLocked(missingStars: number): void {
-    this.showToast(`연구 구역으로 가려면 앞 교실 별 조각이 ${missingStars}개 더 필요해.`);
   }
 
   showClear(): void {
@@ -612,17 +619,20 @@ export class OverlayUI {
       return block;
     };
 
+    const colorChoices = this.stageFinalDoorColorChoices;
+    const shapeChoices = this.stageFinalDoorShapeChoices;
+    const noteChoices = this.stageFinalDoorNoteChoices;
     sections.append(
-      renderChoiceSection('색', FINAL_DOOR_COLOR_CHOICES.map((color) => COLOR_LABELS[color]), (value) => {
-        const found = FINAL_DOOR_COLOR_CHOICES.find((color) => COLOR_LABELS[color] === value) ?? null;
+      renderChoiceSection('색', colorChoices.map((color) => COLOR_LABELS[color]), (value) => {
+        const found = colorChoices.find((color) => COLOR_LABELS[color] === value) ?? null;
         selections.color = found;
       }),
-      renderChoiceSection('도형', FINAL_DOOR_SHAPE_CHOICES.map((shape) => SHAPE_LABELS[shape]), (value) => {
-        const found = FINAL_DOOR_SHAPE_CHOICES.find((shape) => SHAPE_LABELS[shape] === value) ?? null;
+      renderChoiceSection('도형', shapeChoices.map((shape) => SHAPE_LABELS[shape]), (value) => {
+        const found = shapeChoices.find((shape) => SHAPE_LABELS[shape] === value) ?? null;
         selections.shape = found;
       }),
-      renderChoiceSection('음', FINAL_DOOR_NOTE_CHOICES.map((note) => RHYTHM_LABELS[note]), (value) => {
-        const found = FINAL_DOOR_NOTE_CHOICES.find((note) => RHYTHM_LABELS[note] === value) ?? null;
+      renderChoiceSection('음', noteChoices.map((note) => RHYTHM_LABELS[note]), (value) => {
+        const found = noteChoices.find((note) => RHYTHM_LABELS[note] === value) ?? null;
         selections.note = found;
       }),
     );

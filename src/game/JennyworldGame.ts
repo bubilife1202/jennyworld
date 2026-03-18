@@ -53,6 +53,18 @@ const CAMERA_YAW_LIMIT = 55;
 const CAMERA_PITCH_LIMIT_UP = 35;
 const CAMERA_PITCH_LIMIT_DOWN = -22;
 const LANDING_BOUNCE_DECAY = 5.2;
+
+const SOLVED_HIGHLIGHT_COLOR = new pc.Color(1, 0.84, 0.36);
+const SOLVED_HIGHLIGHT_EMISSIVE = new pc.Color(0.26, 0.22, 0.02);
+const UNSOLVED_HIGHLIGHT_EMISSIVE = new pc.Color(0.03, 0.03, 0.05);
+const SOLVED_ORB_DIFFUSE = new pc.Color(1, 0.82, 0.33);
+const SOLVED_ORB_EMISSIVE = new pc.Color(0.8, 0.62, 0.18);
+const UNSOLVED_ORB_DIFFUSE = new pc.Color(0.27, 0.31, 0.39);
+const UNSOLVED_ORB_EMISSIVE = new pc.Color(0.08, 0.1, 0.12);
+const SOLVED_SLOT_DIFFUSE = new pc.Color(1, 0.82, 0.33);
+const SOLVED_SLOT_EMISSIVE = new pc.Color(0.88, 0.66, 0.16);
+const UNSOLVED_SLOT_DIFFUSE = new pc.Color(0.23, 0.26, 0.35);
+const UNSOLVED_SLOT_EMISSIVE = new pc.Color(0.03, 0.03, 0.04);
 const ROOM_HALF_WIDTH = 20;
 const ROOM_HALF_DEPTH = 28;
 const PLAYER_START_Z = 16.5;
@@ -866,13 +878,13 @@ export class JennyworldGame {
 
     this.puzzleStations.forEach((station, id) => {
       const solved = this.progress[id];
-      station.highlightMaterial.diffuse = solved ? station.solvedColor : station.baseColor;
-      station.highlightMaterial.emissive = solved ? new pc.Color(0.26, 0.22, 0.02) : new pc.Color(0.03, 0.03, 0.05);
+      station.highlightMaterial.diffuse = solved ? SOLVED_HIGHLIGHT_COLOR : station.baseColor;
+      station.highlightMaterial.emissive = solved ? SOLVED_HIGHLIGHT_EMISSIVE : UNSOLVED_HIGHLIGHT_EMISSIVE;
       station.highlightMaterial.emissiveIntensity = solved ? 1.2 : 0.5;
       station.highlightMaterial.update();
 
-      station.orbMaterial.diffuse = solved ? new pc.Color(1, 0.82, 0.33) : new pc.Color(0.27, 0.31, 0.39);
-      station.orbMaterial.emissive = solved ? new pc.Color(0.8, 0.62, 0.18) : new pc.Color(0.08, 0.1, 0.12);
+      station.orbMaterial.diffuse = solved ? SOLVED_ORB_DIFFUSE : UNSOLVED_ORB_DIFFUSE;
+      station.orbMaterial.emissive = solved ? SOLVED_ORB_EMISSIVE : UNSOLVED_ORB_EMISSIVE;
       station.orbMaterial.emissiveIntensity = solved ? 1.9 : 1.4;
       station.orbMaterial.update();
       station.orb.enabled = !solved;
@@ -887,8 +899,8 @@ export class JennyworldGame {
       const slotMaterial = rawMaterial;
 
       const solved = this.progress[puzzleId];
-      slotMaterial.diffuse = solved ? new pc.Color(1, 0.82, 0.33) : new pc.Color(0.23, 0.26, 0.35);
-      slotMaterial.emissive = solved ? new pc.Color(0.88, 0.66, 0.16) : new pc.Color(0.03, 0.03, 0.04);
+      slotMaterial.diffuse = solved ? SOLVED_SLOT_DIFFUSE : UNSOLVED_SLOT_DIFFUSE;
+      slotMaterial.emissive = solved ? SOLVED_SLOT_EMISSIVE : UNSOLVED_SLOT_EMISSIVE;
       slotMaterial.emissiveIntensity = solved ? 2 : 0.35;
       slotMaterial.update();
     });
@@ -1012,7 +1024,7 @@ export class JennyworldGame {
     }
     const markers = PUZZLE_IDS.map((puzzleId) => {
       const station = this.puzzleStations.get(puzzleId);
-      const position = station?.entity.getPosition() ?? new pc.Vec3();
+      const position = station?.entity.getPosition() ?? pc.Vec3.ZERO;
       return {
         x: normalize(position.x, ROOM_HALF_WIDTH),
         y: normalize(-position.z, ROOM_HALF_DEPTH),

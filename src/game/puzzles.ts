@@ -150,6 +150,9 @@ export const STAGE_2_MEMORY_SEQUENCE = ['mint', 'sun', 'pink', 'sky', 'sun', 'mi
 export const STAGE_2_RHYTHM_SEQUENCE = ['sol', 'mi', 'do', 'la', 'sol', 'mi', 'do'] as const;
 export const STAGE_2_SWITCH_TARGET = [true, true, false, true, false, true, true] as const;
 export const STAGE_2_SWITCH_LINKED = true;
+export const STAGE_2_FINAL_DOOR_COLOR_CHOICES = ['pink', 'green', 'blue'] as const;
+export const STAGE_2_FINAL_DOOR_SHAPE_CHOICES = ['star', 'diamond', 'circle'] as const;
+export const STAGE_2_FINAL_DOOR_NOTE_CHOICES = ['mi', 'sol', 'do'] as const;
 export const STAGE_2_FINAL_DOOR_ANSWER = {
   color: 'pink',
   shape: 'star',
