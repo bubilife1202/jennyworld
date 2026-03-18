@@ -136,6 +136,8 @@ export class OverlayUI {
   private secondaryPanelBeforeModal: SecondaryPanelKey | null = null;
   private syncingSecondaryPanels = false;
   private currentStage: 1 | 2 = 1;
+  private lastMinimapJson = '';
+  private minimapPlayerDot: HTMLDivElement | null = null;
 
   constructor(mount: HTMLElement) {
     mount.innerHTML = `
@@ -197,9 +199,9 @@ export class OverlayUI {
           </details>
 
           <div class="modal-backdrop is-hidden">
-            <section class="modal-card">
+            <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
               <header class="modal-header">
-                <h2 class="modal-title"></h2>
+                <h2 class="modal-title" id="modal-heading"></h2>
                 <button class="modal-close" type="button" aria-label="닫기">×</button>
               </header>
               <div class="modal-body"></div>
@@ -397,30 +399,39 @@ export class OverlayUI {
   setMinimap(state: MinimapState): void {
     this.minimapCaption.textContent = state.zoneLabel;
 
-    const children: HTMLElement[] = [];
-    state.markers.forEach((marker) => {
-      const dot = document.createElement('div');
-      dot.className = `minimap-dot ${marker.solved ? 'is-solved' : ''}`;
-      dot.style.left = `${marker.x}%`;
-      dot.style.top = `${marker.y}%`;
-      children.push(dot);
-    });
+    const staticJson = JSON.stringify({ m: state.markers, t: state.target });
+    if (staticJson !== this.lastMinimapJson) {
+      this.lastMinimapJson = staticJson;
 
-    if (state.target) {
-      const target = document.createElement('div');
-      target.className = 'minimap-target';
-      target.style.left = `${state.target.x}%`;
-      target.style.top = `${state.target.y}%`;
-      children.push(target);
+      const children: HTMLElement[] = [];
+      state.markers.forEach((marker) => {
+        const dot = document.createElement('div');
+        dot.className = `minimap-dot ${marker.solved ? 'is-solved' : ''}`;
+        dot.style.left = `${marker.x}%`;
+        dot.style.top = `${marker.y}%`;
+        children.push(dot);
+      });
+
+      if (state.target) {
+        const target = document.createElement('div');
+        target.className = 'minimap-target';
+        target.style.left = `${state.target.x}%`;
+        target.style.top = `${state.target.y}%`;
+        children.push(target);
+      }
+
+      const player = document.createElement('div');
+      player.className = 'minimap-player';
+      player.style.left = `${state.player.x}%`;
+      player.style.top = `${state.player.y}%`;
+      children.push(player);
+
+      this.minimapField.replaceChildren(...children);
+      this.minimapPlayerDot = player;
+    } else if (this.minimapPlayerDot) {
+      this.minimapPlayerDot.style.left = `${state.player.x}%`;
+      this.minimapPlayerDot.style.top = `${state.player.y}%`;
     }
-
-    const player = document.createElement('div');
-    player.className = 'minimap-player';
-    player.style.left = `${state.player.x}%`;
-    player.style.top = `${state.player.y}%`;
-    children.push(player);
-
-    this.minimapField.replaceChildren(...children);
   }
 
   setPrompt(prompt: PromptState | null): void {
@@ -524,6 +535,7 @@ export class OverlayUI {
     this.modalBackdrop.classList.remove('is-hidden');
     this.modalTitle.textContent = definition.title;
     this.modalClose.hidden = false;
+    this.modalClose.focus();
     this.collapseSecondaryPanelsForModal();
     this.setPrompt(null);
 

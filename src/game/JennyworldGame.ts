@@ -85,6 +85,15 @@ export class JennyworldGame {
   private readonly researchGateObstacle: Obstacle = { x: 0, z: -6.4, radius: 2.25 };
   private readonly doorSlots: pc.Entity[] = [];
   private readonly playerVelocity = new pc.Vec3();
+  private readonly _inputVec = new pc.Vec3();
+  private readonly _forwardVec = new pc.Vec3();
+  private readonly _rightVec = new pc.Vec3();
+  private readonly _desiredDir = new pc.Vec3();
+  private readonly _candidatePos = new pc.Vec3();
+  private readonly _camRight = new pc.Vec3();
+  private readonly _camLead = new pc.Vec3();
+  private readonly _camDesired = new pc.Vec3();
+  private readonly _camNext = new pc.Vec3();
   private walkCycle = 0;
   private playerHeight = 0;
   private verticalVelocity = 0;
@@ -337,10 +346,18 @@ export class JennyworldGame {
     glowMaterial.depthWrite = false;
     glowMaterial.update();
 
+    const clueMarkerMaterial = this.makeMaterial([0.88, 0.82, 0.62], [0.12, 0.1, 0.05]);
+    const clueRingMaterial = this.makeMaterial([1, 0.92, 0.5], [0.3, 0.25, 0.08]);
+    clueRingMaterial.emissiveIntensity = 1.4;
+    clueRingMaterial.update();
+
     clues.forEach((clue, index) => {
       const anchor = new pc.Entity(`clue-anchor-${index}`);
       anchor.setPosition(clue.position);
       this.app.root.addChild(anchor);
+
+      anchor.addChild(this.makePrimitive('cylinder', clueMarkerMaterial, new pc.Vec3(0, 0.02, 0), new pc.Vec3(0.7, 0.04, 0.7), `clue-disc-${index}`));
+      anchor.addChild(this.makePrimitive('cylinder', clueRingMaterial, new pc.Vec3(0, 0.05, 0), new pc.Vec3(0.85, 0.03, 0.85), `clue-ring-${index}`));
 
       const glow = this.makePrimitive('sphere', glowMaterial, new pc.Vec3(0, 0.5, 0), new pc.Vec3(0.25, 0.25, 0.25), `clue-glow-${index}`);
       anchor.addChild(glow);
@@ -442,6 +459,20 @@ export class JennyworldGame {
     clouds.forEach((position, index) => {
       const cloud = this.makePrimitive('sphere', cloudMaterial, position, new pc.Vec3(1.8, 0.9, 0.45), `cloud-${index}`);
       this.app.root.addChild(cloud);
+    });
+
+    const ceilingMaterial = this.makeMaterial([0.94, 0.96, 1], [0.04, 0.04, 0.06]);
+    this.app.root.addChild(this.makePrimitive('box', ceilingMaterial, new pc.Vec3(0, 6.1, 0), new pc.Vec3(ROOM_HALF_WIDTH * 2, 0.2, ROOM_HALF_DEPTH * 2), 'ceiling'));
+
+    const windowFrameMaterial = this.makeMaterial([0.48, 0.42, 0.32], [0.06, 0.05, 0.03]);
+    const windowGlassMaterial = this.makeMaterial([0.75, 0.88, 1], [0.08, 0.12, 0.18]);
+    windowGlassMaterial.emissiveIntensity = 1.2;
+    windowGlassMaterial.opacity = 0.6;
+    windowGlassMaterial.blendType = pc.BLEND_NORMAL;
+    windowGlassMaterial.update();
+    [-10, 10].forEach((x, index) => {
+      this.app.root.addChild(this.makePrimitive('box', windowFrameMaterial, new pc.Vec3(x, 3.6, 27.35), new pc.Vec3(3.6, 2.4, 0.12), `window-frame-${index}`));
+      this.app.root.addChild(this.makePrimitive('box', windowGlassMaterial, new pc.Vec3(x, 3.6, 27.32), new pc.Vec3(3.0, 1.9, 0.06), `window-glass-${index}`));
     });
   }
 
@@ -752,6 +783,8 @@ export class JennyworldGame {
     countingDesk.addChild(this.makePrimitive('box', deskMaterial, new pc.Vec3(0, 1.08, 0), new pc.Vec3(5.8, 0.2, 2.2), 'count-desk-top'));
     const pencilMaterial = this.makeMaterial([1, 0.83, 0.38], [0.08, 0.05, 0.01]);
     const crayonMaterial = this.makeMaterial([1, 0.53, 0.44], [0.08, 0.04, 0.03]);
+    const eraserMaterial = this.makeMaterial([1, 0.68, 0.72], [0.08, 0.04, 0.05]);
+    const rulerMaterial = this.makeMaterial([0.52, 0.76, 0.95], [0.04, 0.06, 0.08]);
     for (let index = 0; index < 8; index += 1) {
       const pencil = this.makePrimitive(
         'cylinder',
@@ -774,6 +807,11 @@ export class JennyworldGame {
         ),
       );
     }
+    countingDesk.addChild(this.makePrimitive('box', eraserMaterial, new pc.Vec3(2.2, 1.24, -0.3), new pc.Vec3(0.38, 0.16, 0.22), 'desk-eraser'));
+    const ruler = this.makePrimitive('box', rulerMaterial, new pc.Vec3(-2.4, 1.22, 0.5), new pc.Vec3(0.14, 0.04, 1.6), 'desk-ruler');
+    ruler.setEulerAngles(0, 15, 0);
+    countingDesk.addChild(ruler);
+    countingDesk.addChild(this.makePrimitive('cylinder', this.makeMaterial([0.45, 0.55, 0.68], [0.04, 0.05, 0.06]), new pc.Vec3(2.4, 1.38, 0.3), new pc.Vec3(0.28, 0.4, 0.28), 'desk-pencil-cup'));
     this.app.root.addChild(countingDesk);
     this.obstacleMap.push({ x: 0, z: 19.1, radius: 2.1 });
   }
@@ -1044,16 +1082,20 @@ export class JennyworldGame {
       (keyboard?.isPressed(pc.KEY_W) || keyboard?.isPressed(pc.KEY_UP) ? 1 : 0) +
       joystick.y;
 
-    const input = new pc.Vec3(moveX, 0, moveZ);
+    const input = this._inputVec;
+    input.set(moveX, 0, moveZ);
     const hasInput = input.lengthSq() > 0.0001;
     if (hasInput && input.lengthSq() > 1) {
       input.normalize();
     }
 
     const yawRadians = this.cameraYaw * pc.math.DEG_TO_RAD;
-    const forward = new pc.Vec3(-Math.sin(yawRadians), 0, -Math.cos(yawRadians));
-    const right = new pc.Vec3(Math.cos(yawRadians), 0, -Math.sin(yawRadians));
-    const desiredDirection = new pc.Vec3();
+    const forward = this._forwardVec;
+    forward.set(-Math.sin(yawRadians), 0, -Math.cos(yawRadians));
+    const right = this._rightVec;
+    right.set(Math.cos(yawRadians), 0, -Math.sin(yawRadians));
+    const desiredDirection = this._desiredDir;
+    desiredDirection.set(0, 0, 0);
 
     if (hasInput) {
       desiredDirection.add2(right.mulScalar(input.x), forward.mulScalar(-input.z));
@@ -1077,8 +1119,9 @@ export class JennyworldGame {
       this.playerVelocity.z = 0;
     }
 
-    const position = this.playerRoot.getPosition().clone();
-    const candidate = new pc.Vec3(
+    const position = this.playerRoot.getPosition();
+    const candidate = this._candidatePos;
+    candidate.set(
       position.x + this.playerVelocity.x * dt,
       this.playerHeight,
       position.z + this.playerVelocity.z * dt,
@@ -1133,8 +1176,19 @@ export class JennyworldGame {
       }
     }
 
+    if (this.nearestInteractable && this.nearestInteractable !== nearest && this.nearestInteractable.kind === 'puzzle') {
+      const prev = this.nearestInteractable;
+      prev.highlightMaterial.emissiveIntensity = this.progress[prev.id] ? 1.2 : 0.5;
+      prev.highlightMaterial.update();
+    }
+
     this.nearestInteractable = nearest;
     if (nearest) {
+      if (nearest.kind === 'puzzle') {
+        const pulse = 1.4 + Math.sin(this.timeElapsed * 4) * 0.4;
+        nearest.highlightMaterial.emissiveIntensity = pulse;
+        nearest.highlightMaterial.update();
+      }
       if (nearest.kind === 'door') {
         const solvedCount = countSolvedPuzzles(this.progress);
         nearest.prompt.detail =
@@ -1158,11 +1212,14 @@ export class JennyworldGame {
     const cameraHeight = isPortrait ? 9.2 : 7.6;
     const cameraDistance = isPortrait ? 11.6 : 10.1;
     const yawRadians = this.cameraYaw * pc.math.DEG_TO_RAD;
-    const right = new pc.Vec3(Math.cos(yawRadians), 0, -Math.sin(yawRadians));
+    const right = this._camRight;
+    right.set(Math.cos(yawRadians), 0, -Math.sin(yawRadians));
     const leadStrength = isPortrait ? 0.18 : 0.22;
-    const lead = new pc.Vec3(this.playerVelocity.x * leadStrength, 0, this.playerVelocity.z * leadStrength);
+    const lead = this._camLead;
+    lead.set(this.playerVelocity.x * leadStrength, 0, this.playerVelocity.z * leadStrength);
     const shoulderOffset = isPortrait ? 0.16 : 0.28;
-    const desiredPosition = new pc.Vec3(
+    const desiredPosition = this._camDesired;
+    desiredPosition.set(
       pc.math.clamp(playerPosition.x + Math.sin(yawRadians) * cameraDistance + right.x * shoulderOffset, -ROOM_HALF_WIDTH + 3, ROOM_HALF_WIDTH - 3),
       cameraHeight,
       pc.math.clamp(playerPosition.z + Math.cos(yawRadians) * cameraDistance + right.z * shoulderOffset, -ROOM_HALF_DEPTH + 4, ROOM_HALF_DEPTH - 4),
@@ -1171,7 +1228,8 @@ export class JennyworldGame {
     const isMoving = Math.hypot(this.playerVelocity.x, this.playerVelocity.z) > 0.5;
     const cameraLag = isMoving ? 5.5 : 9.0;
     const blend = 1 - Math.exp(-dt * cameraLag);
-    const next = new pc.Vec3(
+    const next = this._camNext;
+    next.set(
       pc.math.lerp(current.x, desiredPosition.x, blend),
       pc.math.lerp(current.y, desiredPosition.y, blend),
       pc.math.lerp(current.z, desiredPosition.z, blend),
