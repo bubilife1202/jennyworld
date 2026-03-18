@@ -106,6 +106,7 @@ export class JennyworldGame {
   private readonly _camLead = new pc.Vec3();
   private readonly _camDesired = new pc.Vec3();
   private readonly _camNext = new pc.Vec3();
+  private readonly _minimapMarkers = PUZZLE_IDS.map(() => ({ x: 0, y: 0, solved: false }));
   private walkCycle = 0;
   private playerHeight = 0;
   private verticalVelocity = 0;
@@ -740,6 +741,24 @@ export class JennyworldGame {
       this.makeMaterial([1, 0.82, 0.4], [0.08, 0.05, 0.01]),
     ];
 
+    // Floating dust motes in sunbeam near windows
+    const dustMaterial = this.makeMaterial([1, 0.98, 0.85], [0.6, 0.55, 0.35]);
+    dustMaterial.emissiveIntensity = 1.8;
+    dustMaterial.opacity = 0.35;
+    dustMaterial.blendType = pc.BLEND_ADDITIVE;
+    dustMaterial.depthWrite = false;
+    dustMaterial.update();
+    for (let i = 0; i < 12; i += 1) {
+      const seed = (i * 3571 + 7919) % 7919;
+      const dx = -8 + (seed % 160) / 10;
+      const dy = 1.5 + ((seed * 3) % 40) / 10;
+      const dz = 20 + ((seed * 7) % 60) / 10;
+      const size = 0.06 + ((seed * 11) % 6) / 100;
+      const mote = this.makePrimitive('sphere', dustMaterial, new pc.Vec3(dx, dy, dz), new pc.Vec3(size, size, size), `dust-mote-${i}`, false);
+      this.app.root.addChild(mote);
+      this.floatingEntities.push({ entity: mote, baseY: dy });
+    }
+
     const board = this.makePrimitive('box', boardMaterial, new pc.Vec3(0, 3.2, 27.2), new pc.Vec3(11, 2.6, 0.16), 'chalk-board');
     this.app.root.addChild(board);
     this.app.root.addChild(this.makePrimitive('box', artMaterial, new pc.Vec3(-15.6, 3.1, -17.8), new pc.Vec3(4.6, 2.8, 0.2), 'art-board'));
@@ -854,6 +873,12 @@ export class JennyworldGame {
     const westShelf = new pc.Entity('west-shelf');
     westShelf.setPosition(-17.1, 0, -11.8);
     westShelf.addChild(this.makePrimitive('box', shelfMaterial, new pc.Vec3(0, 1.8, 0), new pc.Vec3(1.2, 3.5, 8.4), 'west-shelf-frame'));
+    const globeStandMaterial = this.makeMaterial([0.42, 0.36, 0.28], [0.05, 0.04, 0.03]);
+    const globeSphereMaterial = this.makeMaterial([0.35, 0.55, 0.78], [0.06, 0.1, 0.16]);
+    globeSphereMaterial.emissiveIntensity = 0.8;
+    globeSphereMaterial.update();
+    westShelf.addChild(this.makePrimitive('cylinder', globeStandMaterial, new pc.Vec3(0, 3.7, 0), new pc.Vec3(0.12, 0.5, 0.12), 'globe-stand'));
+    westShelf.addChild(this.makePrimitive('sphere', globeSphereMaterial, new pc.Vec3(0, 4.15, 0), new pc.Vec3(0.6, 0.6, 0.6), 'globe-sphere'));
     this.app.root.addChild(westShelf);
     this.obstacleMap.push({ x: -17.1, z: -11.8, radius: 1.5 });
 
@@ -1093,14 +1118,13 @@ export class JennyworldGame {
       this.lastZoneLabel = zoneLabel;
       this.ui.setZoneLabel(zoneLabel);
     }
-    const markers = PUZZLE_IDS.map((puzzleId) => {
+    const markers = this._minimapMarkers;
+    PUZZLE_IDS.forEach((puzzleId, i) => {
       const station = this.puzzleStations.get(puzzleId);
       const position = station?.entity.getPosition() ?? pc.Vec3.ZERO;
-      return {
-        x: normalize(position.x, ROOM_HALF_WIDTH),
-        y: normalize(-position.z, ROOM_HALF_DEPTH),
-        solved: this.progress[puzzleId],
-      };
+      markers[i].x = normalize(position.x, ROOM_HALF_WIDTH);
+      markers[i].y = normalize(-position.z, ROOM_HALF_DEPTH);
+      markers[i].solved = this.progress[puzzleId];
     });
 
     const solvedCount = countSolvedPuzzles(this.progress);

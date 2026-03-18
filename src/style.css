@@ -81,6 +81,7 @@ button {
   inset: 0;
   pointer-events: none;
   z-index: 2;
+  contain: layout style;
 }
 
 .hud-card {
@@ -196,6 +197,7 @@ button {
   box-shadow: var(--shadow);
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 140ms ease, background 140ms ease;
 }
 
@@ -486,6 +488,7 @@ button {
   background: linear-gradient(180deg, #ffe790 0%, #ffb93b 100%);
   box-shadow: 0 16px 32px rgba(255, 176, 51, 0.35);
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     opacity 180ms ease,
     transform 180ms ease;
@@ -831,6 +834,7 @@ button {
   justify-content: center;
   text-align: center;
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     transform 140ms ease,
     box-shadow 140ms ease,
@@ -953,6 +957,7 @@ button {
   padding: 0.9rem 1.15rem;
   font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .primary-button {
@@ -1338,6 +1343,22 @@ button {
     height: 4.8rem;
     font-size: 0.92rem;
   }
+}
+
+/* Keyboard focus outlines for accessibility */
+.action-button:focus-visible,
+.reset-button:focus-visible,
+.jump-button:focus-visible,
+.modal-close:focus-visible,
+.primary-button:focus-visible,
+.secondary-button:focus-visible,
+.puzzle-button:focus-visible,
+.choice-button:focus-visible,
+.memory-button:focus-visible,
+.shape-slot:focus-visible,
+.sequence-slot:focus-visible {
+  outline: 3px solid rgba(47, 103, 255, 0.7);
+  outline-offset: 2px;
 }
 
 @media (orientation: portrait) and (max-width: 960px) {
