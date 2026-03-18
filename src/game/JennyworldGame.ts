@@ -1806,6 +1806,31 @@ export class JennyworldGame {
       this.floatingEntities.push({ entity: firefly, baseY: position.y });
     });
 
+    // Decorative clue artifacts (visual-only, like Room 1's wall boards)
+    const clueStoneMaterial = this.makeMaterial([0.48, 0.5, 0.52], [0.05, 0.05, 0.06]);
+    const colorStone = new pc.Entity('color-clue-stone');
+    colorStone.setPosition(-14, 0, 14);
+    colorStone.addChild(this.makePrimitive('box', clueStoneMaterial, new pc.Vec3(0, 0.15, 0), new pc.Vec3(3.6, 0.3, 1.2), 'color-stone-base', false));
+    const stoneColors: Array<[number, number, number]> = [
+      [0.42, 0.88, 0.61], [1, 0.55, 0.79], [0.28, 0.57, 1],
+      [1, 0.44, 0.41], [1, 0.82, 0.4], [1, 0.55, 0.79], [0.42, 0.88, 0.61],
+    ];
+    stoneColors.forEach((c, i) => {
+      colorStone.addChild(this.makePrimitive('sphere', this.makeMaterial(c, [0.08, 0.08, 0.08]),
+        new pc.Vec3(-1.5 + i * 0.5, 0.42, 0), new pc.Vec3(0.28, 0.28, 0.14), `color-stone-dot-${i}`, false));
+    });
+    this.app.root.addChild(colorStone);
+
+    // Switch pattern on garden divider
+    const switchCluePanel = new pc.Entity('switch-clue-divider');
+    switchCluePanel.setPosition(0, 2.6, -6.4);
+    [true, true, false, true, false, true, true].forEach((isOn, i) => {
+      switchCluePanel.addChild(this.makePrimitive('sphere',
+        this.makeMaterial(isOn ? [1, 0.86, 0.43] : [0.2, 0.22, 0.28], isOn ? [0.22, 0.16, 0.04] : [0.02, 0.02, 0.02]),
+        new pc.Vec3(-1.8 + i * 0.6, 0, 0.35), new pc.Vec3(0.18, 0.18, 0.1), `switch-divider-clue-${i}`, false));
+    });
+    this.app.root.addChild(switchCluePanel);
+
     // Player start
     this.playerRoot.setPosition(0, 0, PLAYER_START_Z);
     this.playerRoot.setEulerAngles(0, 180, 0);

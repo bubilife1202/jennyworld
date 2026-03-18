@@ -8,7 +8,6 @@ import {
   FINAL_DOOR_COLOR_CHOICES,
   FINAL_DOOR_NOTE_CHOICES,
   FINAL_DOOR_SHAPE_CHOICES,
-  MEMORY_HEX,
   MEMORY_LABELS,
   MEMORY_SEQUENCE,
   PUZZLE_DEFINITIONS,
@@ -1108,7 +1107,6 @@ export class OverlayUI {
       button.type = 'button';
       button.dataset.color = color;
       button.textContent = MEMORY_LABELS[color];
-      button.style.background = MEMORY_HEX[color];
       button.addEventListener('click', () => {
         if (isPlayback) {
           return;

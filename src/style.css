@@ -800,7 +800,10 @@ button {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.sequence-preview,
+.sequence-preview {
+  grid-template-columns: repeat(auto-fill, minmax(3.8rem, 1fr));
+}
+
 .shape-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -921,6 +924,11 @@ button {
 .memory-button[data-color='sun'] {
   background: linear-gradient(180deg, #fff1b9 0%, #ffcc54 100%);
   color: #6f4a00;
+}
+
+.memory-button[data-color='mint'] {
+  background: linear-gradient(180deg, #b8f5e6 0%, #5ce0c8 100%);
+  color: #1a5b59;
 }
 
 .button-row {
@@ -1113,9 +1121,13 @@ button {
   .color-grid,
   .choice-grid,
   .memory-grid,
-  .shape-grid,
-  .sequence-preview {
+  .shape-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .sequence-preview {
+    grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
     gap: 0.5rem;
   }
 
