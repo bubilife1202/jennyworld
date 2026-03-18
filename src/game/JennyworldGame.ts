@@ -2011,6 +2011,30 @@ export class JennyworldGame {
       this.obstacleMap.push({ x: pos.x, z: pos.z, radius: 1.2 });
     });
 
+    // Frozen pools
+    const frozenPoolMaterial = this.makeMaterial([0.55, 0.72, 0.88], [0.2, 0.35, 0.5], 0.92);
+    frozenPoolMaterial.emissiveIntensity = 0.8;
+    frozenPoolMaterial.opacity = 0.6;
+    frozenPoolMaterial.blendType = pc.BLEND_NORMAL;
+    frozenPoolMaterial.update();
+    [new pc.Vec3(-8, 0.02, 14), new pc.Vec3(8, 0.02, -8), new pc.Vec3(-4, 0.02, -22)].forEach((pos, i) => {
+      const poolW = 3 + (i % 2) * 1.5;
+      const poolD = 2.5 + ((i + 1) % 2) * 1;
+      this.app.root.addChild(this.makePrimitive('cylinder', frozenPoolMaterial, pos, new pc.Vec3(poolW, 0.06, poolD), `frozen-pool-${i}`, false));
+    });
+
+    // Ice boulders
+    const iceBoulderMaterial = this.makeMaterial([0.5, 0.62, 0.72], [0.08, 0.12, 0.18]);
+    [new pc.Vec3(-10, 0, 10), new pc.Vec3(10, 0, 6), new pc.Vec3(-6, 0, -14), new pc.Vec3(12, 0, -18)].forEach((pos, i) => {
+      const s = 1.2 + (i % 3) * 0.3;
+      const boulder = new pc.Entity(`ice-boulder-${i}`);
+      boulder.setPosition(pos);
+      boulder.addChild(this.makePrimitive('sphere', iceBoulderMaterial, new pc.Vec3(0, s * 0.4, 0), new pc.Vec3(s * 1.3, s * 0.8, s), `boulder-body-${i}`));
+      boulder.addChild(this.makePrimitive('sphere', iceBoulderMaterial, new pc.Vec3(s * 0.5, s * 0.2, 0.2), new pc.Vec3(s * 0.6, s * 0.5, s * 0.5), `boulder-lump-${i}`));
+      this.app.root.addChild(boulder);
+      this.obstacleMap.push({ x: pos.x, z: pos.z, radius: s * 0.8 });
+    });
+
     // Ice gate (research gate equivalent)
     const iceGateMaterial = this.makeMaterial([0.5, 0.7, 0.9], [0.15, 0.2, 0.3]);
     iceGateMaterial.emissiveIntensity = 1.2;
@@ -2097,6 +2121,24 @@ export class JennyworldGame {
       this.interactables.push({ kind: 'clue', entity: anchor, prompt: clue.prompt, title: clue.title, body: clue.body });
     });
 
+    // Drifting ice motes
+    const iceMotesMaterial = this.makeMaterial([0.7, 0.85, 1], [0.4, 0.6, 1]);
+    iceMotesMaterial.emissiveIntensity = 2.0;
+    iceMotesMaterial.opacity = 0.3;
+    iceMotesMaterial.blendType = pc.BLEND_ADDITIVE;
+    iceMotesMaterial.depthWrite = false;
+    iceMotesMaterial.update();
+    for (let i = 0; i < 18; i += 1) {
+      const seed = (i * 5101 + 8363) % 8363;
+      const mx = -16 + (seed % 320) / 10;
+      const my = 1.0 + ((seed * 3) % 50) / 10;
+      const mz = -24 + ((seed * 7) % 480) / 10;
+      const size = 0.05 + ((seed * 11) % 5) / 100;
+      const mote = this.makePrimitive('sphere', iceMotesMaterial, new pc.Vec3(mx, my, mz), new pc.Vec3(size, size, size), `ice-mote-${i}`, false);
+      this.app.root.addChild(mote);
+      this.floatingEntities.push({ entity: mote, baseY: my });
+    }
+
     this.playerRoot.setPosition(0, 0, PLAYER_START_Z);
     this.playerRoot.setEulerAngles(0, 180, 0);
   }
@@ -2172,6 +2214,32 @@ export class JennyworldGame {
       const cloud = this.makePrimitive('sphere', cloudMat, new pc.Vec3(cx, cy, cz), new pc.Vec3(6, 2, 4), `cloud-${i}`, false);
       this.app.root.addChild(cloud);
     }
+
+    // Carpet runner
+    const carpetMaterial = this.makeMaterial([0.65, 0.12, 0.15], [0.12, 0.02, 0.03]);
+    this.app.root.addChild(this.makePrimitive('box', carpetMaterial, new pc.Vec3(0, 0.02, 5), new pc.Vec3(3.5, 0.05, 38), 'carpet-runner', false));
+    this.app.root.addChild(this.makePrimitive('box', goldMaterial, new pc.Vec3(-1.8, 0.03, 5), new pc.Vec3(0.12, 0.05, 38), 'carpet-trim-l', false));
+    this.app.root.addChild(this.makePrimitive('box', goldMaterial, new pc.Vec3(1.8, 0.03, 5), new pc.Vec3(0.12, 0.05, 38), 'carpet-trim-r', false));
+
+    // Interior pillars
+    const pillarMaterial = this.makeMaterial([0.78, 0.74, 0.68], [0.06, 0.06, 0.05]);
+    [new pc.Vec3(-8, 0, 18), new pc.Vec3(8, 0, 18), new pc.Vec3(-8, 0, 6), new pc.Vec3(8, 0, 6), new pc.Vec3(-8, 0, -14), new pc.Vec3(8, 0, -14)].forEach((pos, i) => {
+      this.app.root.addChild(this.makePrimitive('cylinder', pillarMaterial, new pc.Vec3(pos.x, 3, pos.z), new pc.Vec3(0.7, 6, 0.7), `pillar-${i}`));
+      this.app.root.addChild(this.makePrimitive('box', darkStoneMaterial, new pc.Vec3(pos.x, 0.15, pos.z), new pc.Vec3(1.1, 0.3, 1.1), `pillar-base-${i}`, false));
+      this.app.root.addChild(this.makePrimitive('box', darkStoneMaterial, new pc.Vec3(pos.x, 5.85, pos.z), new pc.Vec3(1.1, 0.3, 1.1), `pillar-cap-${i}`, false));
+      this.obstacleMap.push({ x: pos.x, z: pos.z, radius: 0.7 });
+    });
+
+    // Throne platform
+    const throneMat = this.makeMaterial([0.6, 0.42, 0.18], [0.1, 0.07, 0.03]);
+    this.app.root.addChild(this.makePrimitive('box', darkStoneMaterial, new pc.Vec3(0, 0.2, 24), new pc.Vec3(6, 0.4, 4), 'throne-dais', false));
+    const throne = new pc.Entity('throne');
+    throne.setPosition(0, 0.4, 24.5);
+    throne.addChild(this.makePrimitive('box', throneMat, new pc.Vec3(0, 0.5, 0), new pc.Vec3(1.6, 0.14, 1.2), 'throne-seat'));
+    throne.addChild(this.makePrimitive('box', throneMat, new pc.Vec3(0, 1.3, -0.5), new pc.Vec3(1.6, 1.5, 0.14), 'throne-back'));
+    throne.addChild(this.makePrimitive('box', goldMaterial, new pc.Vec3(-0.7, 0.7, 0), new pc.Vec3(0.14, 0.5, 1.0), 'throne-arm-l'));
+    throne.addChild(this.makePrimitive('box', goldMaterial, new pc.Vec3(0.7, 0.7, 0), new pc.Vec3(0.14, 0.5, 1.0), 'throne-arm-r'));
+    this.app.root.addChild(throne);
 
     // Castle gate divider
     this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(-7.8, 3, -6.4), new pc.Vec3(10.4, 6, 1), 'castle-divider-w'));
