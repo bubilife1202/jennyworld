@@ -232,16 +232,18 @@ export class JennyworldGame {
 
   renderGameToText(): string {
     const playerPosition = this.playerRoot.getPosition();
-    const zone = playerPosition.z > 6 ? 'front-classroom' : playerPosition.z > -8 ? 'middle-corridor' : 'research-wing';
+    const zone = this.currentStage === 1
+      ? (playerPosition.z > 6 ? 'front-classroom' : playerPosition.z > -8 ? 'middle-corridor' : 'research-wing')
+      : (playerPosition.z > 6 ? 'garden-front' : playerPosition.z > -8 ? 'garden-center' : 'garden-inner');
     const nearest =
       this.nearestInteractable?.kind === 'puzzle'
         ? { kind: 'puzzle', id: this.nearestInteractable.id, title: this.nearestInteractable.prompt.title }
         : this.nearestInteractable
-          ? { kind: 'door', title: this.nearestInteractable.prompt.title }
+          ? { kind: this.nearestInteractable.kind, title: this.nearestInteractable.prompt.title }
           : null;
 
     return JSON.stringify({
-      stage: STAGE_TITLE,
+      stage: this.currentStage === 1 ? STAGE_TITLE : STAGE_2_TITLE,
       progress: this.progress,
       solvedCount: countSolvedPuzzles(this.progress),
       zone,
@@ -336,6 +338,8 @@ export class JennyworldGame {
       this.pendingJump = false;
       this.jumpCharge = 0;
       this.hintTimer = 0;
+      this.nearestInteractable = null;
+      this._actionKeyWasDown = false;
       this.ui.setStage(1);
 
       // Restore Room 1 lighting
@@ -1478,6 +1482,8 @@ export class JennyworldGame {
       this.cameraYaw = 0;
       this.cameraPitch = 6;
       this.lastZoneLabel = null;
+      this.nearestInteractable = null;
+      this._actionKeyWasDown = false;
 
       // Reset camera position to starting view before fade-out
       this.camera.setPosition(0, 7.8, PLAYER_START_Z + 12.5);
