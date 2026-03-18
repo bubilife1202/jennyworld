@@ -164,13 +164,32 @@ export class JennyworldGame {
     };
     window.addEventListener('resize', this.resizeHandler);
 
-    this.buildScene();
-    this.restoreStateFromProgress();
-    this.refreshChecklist();
-    this.updateHud();
-    this.updateObjective();
-    this.ui.setProgress(countSolvedPuzzles(this.progress), PUZZLE_IDS.length);
-    this.ui.showToast('앞쪽 교실에서 단서를 모으고, 뒤쪽 연구 구역까지 돌파해 보자.');
+    if (this.currentStage === 2) {
+      this.ui.setStage(2);
+      this.createLights();
+      this.createCamera();
+      this.buildRoom2();
+      this.restoreStateFromProgress();
+      this.refreshChecklist();
+      this.updateHud();
+      this.updateObjective();
+      this.ui.setProgress(countSolvedPuzzles(this.progress), PUZZLE_IDS.length);
+      this.ui.updateBrandTitle(STAGE_2_TITLE, STAGE_2_SUBTITLE);
+      this.ui.updateClearText(
+        `${STAGE_2_TITLE} 돌파 성공`,
+        '별빛 정원의 모든 퍼즐을 풀었다. 축하해!',
+        '교실부터 다시 시작',
+      );
+      this.ui.showToast('별빛 정원을 계속 탐험하자!');
+    } else {
+      this.buildScene();
+      this.restoreStateFromProgress();
+      this.refreshChecklist();
+      this.updateHud();
+      this.updateObjective();
+      this.ui.setProgress(countSolvedPuzzles(this.progress), PUZZLE_IDS.length);
+      this.ui.showToast('앞쪽 교실에서 단서를 모으고, 뒤쪽 연구 구역까지 돌파해 보자.');
+    }
 
     this.app.on('update', (dt: number) => {
       this.update(dt);
@@ -369,6 +388,11 @@ export class JennyworldGame {
       this.ui.setPrompt(null);
       this.ui.setProgress(0, PUZZLE_IDS.length);
       this.ui.updateBrandTitle(STAGE_TITLE, STAGE_SUBTITLE);
+      this.ui.updateClearText(
+        `${STAGE_TITLE} 돌파 성공`,
+        '별 조각 여섯 개를 모아 돌파 성공! 다음 방이 기다리고 있다.',
+        '별빛 정원으로 이동',
+      );
       this.camera.setPosition(0, 7.8, PLAYER_START_Z + 12.5);
 
       await new Promise<void>((resolve) => setTimeout(resolve, 200));
@@ -474,29 +498,41 @@ export class JennyworldGame {
   }
 
   private createLights(): void {
-    const sun = new pc.Entity('sun');
-    sun.addComponent('light', {
-      type: 'directional',
-      color: new pc.Color(1, 0.96, 0.86),
-      intensity: 1.8,
-      castShadows: true,
-      shadowDistance: 42,
-      shadowBias: 0.25,
-      normalOffsetBias: 0.04,
-      shadowResolution: 2048,
-    });
-    sun.setEulerAngles(45, 45, 0);
-    this.app.root.addChild(sun);
+    let sun = this.app.root.findByName('sun') as pc.Entity | null;
+    if (!sun) {
+      sun = new pc.Entity('sun');
+      sun.addComponent('light', {
+        type: 'directional',
+        color: new pc.Color(1, 0.96, 0.86),
+        intensity: 1.8,
+        castShadows: true,
+        shadowDistance: 42,
+        shadowBias: 0.25,
+        normalOffsetBias: 0.04,
+        shadowResolution: 2048,
+      });
+      sun.setEulerAngles(45, 45, 0);
+      this.app.root.addChild(sun);
+    } else if (sun.light) {
+      sun.light.color = new pc.Color(1, 0.96, 0.86);
+      sun.light.intensity = 1.8;
+    }
 
-    const fill = new pc.Entity('fill');
-    fill.addComponent('light', {
-      type: 'omni',
-      color: new pc.Color(0.72, 0.85, 1),
-      intensity: 0.9,
-      range: 24,
-    });
-    fill.setPosition(0, 8, 2);
-    this.app.root.addChild(fill);
+    let fill = this.app.root.findByName('fill') as pc.Entity | null;
+    if (!fill) {
+      fill = new pc.Entity('fill');
+      fill.addComponent('light', {
+        type: 'omni',
+        color: new pc.Color(0.72, 0.85, 1),
+        intensity: 0.9,
+        range: 24,
+      });
+      fill.setPosition(0, 8, 2);
+      this.app.root.addChild(fill);
+    } else if (fill.light) {
+      fill.light.color = new pc.Color(0.72, 0.85, 1);
+      fill.light.intensity = 0.9;
+    }
   }
 
   private createRoom(): void {
@@ -1048,7 +1084,7 @@ export class JennyworldGame {
     this.animateResearchGate(dt);
     this.animateDoor(dt);
 
-    if (!this.ui.isBlockingGame()) {
+    if (!this.ui.isBlockingGame() && !this.isTransitioning) {
       this.updateJumpPhysics(dt);
       const lookDelta = this.ui.consumeLookDelta();
       if (lookDelta.x !== 0 || lookDelta.y !== 0) {
