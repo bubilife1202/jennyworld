@@ -537,6 +537,7 @@ export class OverlayUI {
       clearText.textContent = text;
     }
     this.nextStageButton.textContent = nextLabel;
+    this.replayButton.hidden = nextLabel === this.replayButton.textContent;
   }
 
   openPuzzle(puzzleId: PuzzleId, onSolved: () => void): void {
@@ -1004,7 +1005,9 @@ export class OverlayUI {
     const wrapper = this.createPuzzleWrapper(definition.subtitle, definition.hint);
     const note = document.createElement('div');
     note.className = 'puzzle-note';
-    note.textContent = '남쪽 긴 책상 위 줄무늬 연필만 세자. 짧은 막대나 다른 소품은 제외다.';
+    note.textContent = this.currentStage === 1
+      ? '남쪽 긴 책상 위 줄무늬 연필만 세자. 짧은 막대나 다른 소품은 제외다.'
+      : '정원에 떠다니는 초록 반딧불만 세자. 노란 반딧불은 제외다.';
 
     const choices = document.createElement('div');
     choices.className = 'choice-grid';

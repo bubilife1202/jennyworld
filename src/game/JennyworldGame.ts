@@ -1248,9 +1248,10 @@ export class JennyworldGame {
         continue;
       }
 
+      const interactRadius = this.currentStage === 1 ? 2.7 : 3.2;
       const worldPosition = interactable.entity.getPosition();
       const distance = Math.hypot(worldPosition.x - playerPosition.x, worldPosition.z - playerPosition.z);
-      if (distance < 2.7 && distance < nearestDistance) {
+      if (distance < interactRadius && distance < nearestDistance) {
         nearest = interactable;
         nearestDistance = distance;
       }
@@ -1489,7 +1490,7 @@ export class JennyworldGame {
       this.ui.updateClearText(
         `${STAGE_2_TITLE} 돌파 성공`,
         '별빛 정원의 모든 퍼즐을 풀었다. 축하해!',
-        '처음부터 다시 하기',
+        '교실부터 다시 시작',
       );
       this.progressStore.save(this.gameProgress);
 

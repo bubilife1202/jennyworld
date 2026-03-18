@@ -872,6 +872,14 @@ button {
   color: #583700;
 }
 
+.puzzle-button[data-color='green'] {
+  background: linear-gradient(180deg, #8ceeb3 0%, #59d98d 100%);
+}
+
+.puzzle-button[data-color='pink'] {
+  background: linear-gradient(180deg, #ffb8dc 0%, #ff82c3 100%);
+}
+
 .shape-target {
   padding: 0.75rem;
   border-radius: 20px;
