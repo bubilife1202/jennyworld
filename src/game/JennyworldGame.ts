@@ -2,10 +2,12 @@ import * as pc from 'playcanvas';
 import {
   PUZZLE_DEFINITIONS, PUZZLE_IDS, STAGE_TITLE, STAGE_SUBTITLE,
   STAGE_2_TITLE, STAGE_2_SUBTITLE, STAGE_2_DEFINITIONS,
+  STAGE_3_TITLE, STAGE_3_SUBTITLE, STAGE_3_DEFINITIONS,
+  STAGE_4_TITLE, STAGE_4_SUBTITLE, STAGE_4_DEFINITIONS,
   type PuzzleDefinition,
 } from './puzzles';
 import { ProgressStore, countSolvedPuzzles } from './ProgressStore';
-import type { GameProgress, ProgressState, PromptState, PuzzleId } from './types';
+import type { GameProgress, ProgressState, PromptState, PuzzleId, StageId } from './types';
 import { OverlayUI } from './ui';
 
 type PuzzleStation = {
@@ -76,14 +78,13 @@ export class JennyworldGame {
   private readonly progressStore = new ProgressStore();
   private gameProgress: GameProgress;
   private get progress(): ProgressState {
-    return this.currentStage === 1 ? this.gameProgress.stage1 : this.gameProgress.stage2;
+    const key = `stage${this.currentStage}` as keyof GameProgress;
+    return this.gameProgress[key] as ProgressState;
   }
   private set progress(value: ProgressState) {
-    if (this.currentStage === 1) {
-      this.gameProgress.stage1 = value;
-    } else {
-      this.gameProgress.stage2 = value;
-    }
+    const key = `stage${this.currentStage}` as keyof GameProgress;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.gameProgress as any)[key] = value;
   }
   private readonly resizeHandler: () => void;
   private readonly playerRoot: pc.Entity;
@@ -127,7 +128,7 @@ export class JennyworldGame {
   private jumpCharge = 0;
   private cameraDragIdle = 0;
   private hintTimer = 0;
-  private currentStage: 1 | 2 = 1;
+  private currentStage: StageId = 1;
   private isTransitioning = false;
   private _actionKeyWasDown = false;
 
@@ -164,23 +165,26 @@ export class JennyworldGame {
     };
     window.addEventListener('resize', this.resizeHandler);
 
-    if (this.currentStage === 2) {
-      this.ui.setStage(2);
+    if (this.currentStage >= 2) {
+      this.ui.setStage(this.currentStage);
       this.createLights();
       this.createCamera();
-      this.buildRoom2();
+      if (this.currentStage === 2) { this.buildRoom2(); }
+      else if (this.currentStage === 3) { this.buildRoom3(); }
+      else { this.buildRoom4(); }
       this.restoreStateFromProgress();
       this.refreshChecklist();
       this.updateHud();
       this.updateObjective();
       this.ui.setProgress(countSolvedPuzzles(this.progress), PUZZLE_IDS.length);
-      this.ui.updateBrandTitle(STAGE_2_TITLE, STAGE_2_SUBTITLE);
+      this.ui.updateBrandTitle(this.stageTitle, this.stageSubtitle);
+      const isLast = this.currentStage >= this.maxStage;
       this.ui.updateClearText(
-        `${STAGE_2_TITLE} 돌파 성공`,
-        '별빛 정원의 모든 퍼즐을 풀었다. 축하해!',
-        '교실부터 다시 시작',
+        `${this.stageTitle} 돌파 성공`,
+        isLast ? '모든 스테이지를 클리어했다. 축하해!' : `${this.stageTitle}을 돌파했다. 다음 방이 기다린다.`,
+        isLast ? '처음부터 다시 하기' : '다음 방으로 이동',
       );
-      this.ui.showToast('별빛 정원을 계속 탐험하자!');
+      this.ui.showToast(`${this.stageTitle}을 계속 탐험하자!`);
     } else {
       this.buildScene();
       this.restoreStateFromProgress();
@@ -196,9 +200,17 @@ export class JennyworldGame {
     });
   }
 
-  getCurrentStage(): 1 | 2 {
+  getCurrentStage(): StageId {
     return this.currentStage;
   }
+
+  private get stageTitle(): string {
+    return [STAGE_TITLE, STAGE_2_TITLE, STAGE_3_TITLE, STAGE_4_TITLE][this.currentStage - 1];
+  }
+  private get stageSubtitle(): string {
+    return [STAGE_SUBTITLE, STAGE_2_SUBTITLE, STAGE_3_SUBTITLE, STAGE_4_SUBTITLE][this.currentStage - 1];
+  }
+  private get maxStage(): StageId { return 4; }
 
   private clearScene(): void {
     const keep = new Set<pc.Entity>([this.camera, this.playerRoot, this.doorRoot, this.researchGateRoot]);
@@ -1491,51 +1503,61 @@ export class JennyworldGame {
     }
   }
 
+  private get stageFragmentName(): string {
+    return ['별 조각', '별빛 조각', '빙결 조각', '천공 조각'][this.currentStage - 1];
+  }
+  private get stageFrontZone(): string {
+    return ['앞 교실', '정원 앞쪽', '동굴 입구', '성 아래쪽'][this.currentStage - 1];
+  }
+  private get stageBackZone(): string {
+    return ['연구 구역', '정원 안쪽', '동굴 깊은 곳', '성 꼭대기'][this.currentStage - 1];
+  }
+  private get stageDoorName(): string {
+    return ['무지개 문', '마법의 문', '빙결 문', '천공 문'][this.currentStage - 1];
+  }
+
   private updateObjective(): void {
     const solvedCount = countSolvedPuzzles(this.progress);
-    const stageTitle = this.currentStage === 1 ? STAGE_TITLE : STAGE_2_TITLE;
     const remaining = PUZZLE_IDS.length - solvedCount;
+    const fragment = this.stageFragmentName;
+    const isLastStage = this.currentStage >= this.maxStage;
 
     if (this.progress.cleared) {
-      this.ui.setObjective(`${stageTitle} 클리어`, this.currentStage === 1
-        ? '긴 교실과 연구 구역을 모두 돌파했다. 별빛 정원이 기다린다.'
-        : '별빛 정원의 모든 퍼즐을 풀었다. 축하해!');
+      this.ui.setObjective(`${this.stageTitle} 클리어`,
+        isLastStage ? '모든 스테이지를 클리어했다. 축하해!' : `${this.stageTitle}을 돌파했다. 다음 방이 기다린다.`);
       return;
     }
 
     if (solvedCount === PUZZLE_IDS.length) {
-      this.ui.setObjective(
-        this.currentStage === 1 ? '북쪽 무지개 문으로 가자' : '마법의 문으로 가자',
-        this.currentStage === 1
-          ? '별 조각 여섯 개를 모두 모았다. 가장 안쪽 탈출 문으로 달려가자.'
-          : '별빛 조각 여섯 개를 모두 모았다. 마법의 문으로 달려가자.');
+      this.ui.setObjective(`${this.stageDoorName}으로 가자`,
+        `${fragment} 여섯 개를 모두 모았다. ${this.stageDoorName}으로 달려가자.`);
       return;
     }
 
     if (solvedCount < 3) {
-      this.ui.setObjective(
-        this.currentStage === 1 ? '앞쪽 교실 단서를 모으자' : '정원 앞쪽을 탐색하자',
-        `퍼즐을 먼저 정리하자. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 ${this.currentStage === 1 ? '별 조각' : '별빛 조각'} ${remaining}개.`);
+      this.ui.setObjective(`${this.stageFrontZone}을 탐색하자`,
+        `퍼즐을 먼저 정리하자. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 ${fragment} ${remaining}개.`);
       return;
     }
 
-    this.ui.setObjective(
-      this.currentStage === 1 ? '뒤쪽 연구 구역을 돌파하자' : '정원 안쪽을 돌파하자',
-      `${this.currentStage === 1 ? '연구 구역' : '정원 안쪽'} 퍼즐이 남아 있다. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 ${this.currentStage === 1 ? '별 조각' : '별빛 조각'} ${remaining}개.`);
+    this.ui.setObjective(`${this.stageBackZone}을 돌파하자`,
+      `${this.stageBackZone} 퍼즐이 남아 있다. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 ${fragment} ${remaining}개.`);
   }
 
-  async transitionToStage2(): Promise<void> {
-    if (this.isTransitioning || this.currentStage === 2) {
+  async transitionToNextStage(): Promise<void> {
+    const nextStage = (this.currentStage + 1) as StageId;
+    if (this.isTransitioning || nextStage > this.maxStage) {
       return;
     }
 
     this.isTransitioning = true;
     try {
-      await this.ui.showTransition('별빛 정원으로 이동 중...');
+      const stageNames = ['', '별빛 정원', '얼음 동굴', '하늘 성'];
+      await this.ui.showTransition(`${stageNames[nextStage - 1]}(으)로 이동 중...`);
 
       this.clearScene();
-      this.currentStage = 2;
-      this.gameProgress.stage = 2;
+      this.currentStage = nextStage;
+      this.gameProgress.stage = nextStage;
       this.clearShown = false;
       this.isResearchGateOpening = false;
       this.researchGateOpenAmount = 0;
@@ -1553,32 +1575,38 @@ export class JennyworldGame {
       this.nearestInteractable = null;
       this._actionKeyWasDown = false;
 
-      // Reset camera position to starting view before fade-out
       this.camera.setPosition(0, 7.8, PLAYER_START_Z + 12.5);
       this.camera.lookAt(0, 1.8, PLAYER_START_Z - 6);
 
-      // Tell UI we're now in stage 2
-      this.ui.setStage(2);
+      this.ui.setStage(nextStage);
 
-      // Rebuild player and scene with Room 2
-      this.buildRoom2();
+      // Build the appropriate room
+      if (nextStage === 2) {
+        this.buildRoom2();
+      } else if (nextStage === 3) {
+        this.buildRoom3();
+      } else {
+        this.buildRoom4();
+      }
+
       this.restoreStateFromProgress();
       this.refreshChecklist();
       this.updateHud();
       this.updateObjective();
       this.ui.setProgress(countSolvedPuzzles(this.progress), PUZZLE_IDS.length);
-      this.ui.updateBrandTitle(STAGE_2_TITLE, STAGE_2_SUBTITLE);
+      this.ui.updateBrandTitle(this.stageTitle, this.stageSubtitle);
+
+      const isLast = nextStage >= this.maxStage;
       this.ui.updateClearText(
-        `${STAGE_2_TITLE} 돌파 성공`,
-        '별빛 정원의 모든 퍼즐을 풀었다. 축하해!',
-        '교실부터 다시 시작',
+        `${this.stageTitle} 돌파 성공`,
+        isLast ? '모든 스테이지를 클리어했다. 축하해!' : `${this.stageTitle}을 돌파했다. 다음 방이 기다린다.`,
+        isLast ? '처음부터 다시 하기' : '다음 방으로 이동',
       );
       this.progressStore.save(this.gameProgress);
 
-      // Fade in
       await new Promise<void>((resolve) => setTimeout(resolve, 200));
       this.ui.hideTransition();
-      this.ui.showToast('별빛 정원에 도착했다. 숨겨진 퍼즐을 찾아보자!');
+      this.ui.showToast(`${this.stageTitle}에 도착했다. 숨겨진 퍼즐을 찾아보자!`);
     } finally {
       this.isTransitioning = false;
     }
@@ -1915,6 +1943,321 @@ export class JennyworldGame {
     this.app.root.addChild(switchCluePanel);
 
     // Player start
+    this.playerRoot.setPosition(0, 0, PLAYER_START_Z);
+    this.playerRoot.setEulerAngles(0, 180, 0);
+  }
+
+  private buildRoom3(): void {
+    this.createPlayer();
+
+    // Ice Cave theme
+    const iceMaterial = this.makeMaterial([0.7, 0.85, 0.95], [0.1, 0.15, 0.2]);
+    const darkIceMaterial = this.makeMaterial([0.35, 0.5, 0.65], [0.06, 0.08, 0.12]);
+    const crystalMaterial = this.makeMaterial([0.6, 0.8, 1], [0.3, 0.45, 0.6]);
+    crystalMaterial.emissiveIntensity = 2.0;
+    crystalMaterial.opacity = 0.7;
+    crystalMaterial.blendType = pc.BLEND_NORMAL;
+    crystalMaterial.update();
+    const stalactiteMaterial = this.makeMaterial([0.55, 0.65, 0.75], [0.08, 0.1, 0.14]);
+
+    // Night-blue sky + cold lighting
+    const cameraComponent = this.camera.camera;
+    if (cameraComponent) { cameraComponent.clearColor = new pc.Color(0.05, 0.08, 0.15); }
+    this.app.scene.ambientLight = new pc.Color(0.15, 0.2, 0.35);
+    const sun = this.app.root.findByName('sun') as pc.Entity | null;
+    if (sun?.light) { sun.light.color = new pc.Color(0.3, 0.4, 0.7); sun.light.intensity = 0.7; }
+    const fill = this.app.root.findByName('fill') as pc.Entity | null;
+    if (fill?.light) { fill.light.color = new pc.Color(0.2, 0.35, 0.6); fill.light.intensity = 0.5; }
+
+    // Cave floor + walls + ceiling
+    this.app.root.addChild(this.makePrimitive('box', darkIceMaterial, new pc.Vec3(0, -0.5, 0), new pc.Vec3(ROOM_HALF_WIDTH * 2, 1, ROOM_HALF_DEPTH * 2), 'cave-floor'));
+    this.app.root.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(-ROOM_HALF_WIDTH - 0.5, 3, 0), new pc.Vec3(1, 6, ROOM_HALF_DEPTH * 2), 'cave-wall-w'));
+    this.app.root.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(ROOM_HALF_WIDTH + 0.5, 3, 0), new pc.Vec3(1, 6, ROOM_HALF_DEPTH * 2), 'cave-wall-e'));
+    this.app.root.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(0, 3, ROOM_HALF_DEPTH + 0.5), new pc.Vec3(ROOM_HALF_WIDTH * 2 + 1, 6, 1), 'cave-wall-s'));
+    this.app.root.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(-9.5, 3, -ROOM_HALF_DEPTH - 0.5), new pc.Vec3(21, 6, 1), 'cave-wall-nl'));
+    this.app.root.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(9.5, 3, -ROOM_HALF_DEPTH - 0.5), new pc.Vec3(21, 6, 1), 'cave-wall-nr'));
+    this.app.root.addChild(this.makePrimitive('box', darkIceMaterial, new pc.Vec3(0, 7, 0), new pc.Vec3(ROOM_HALF_WIDTH * 2, 0.4, ROOM_HALF_DEPTH * 2), 'cave-ceiling'));
+
+    // Stalactites (icicles hanging from ceiling)
+    const iciclePositions = [
+      new pc.Vec3(-12, 5.5, 18), new pc.Vec3(8, 5.8, 15), new pc.Vec3(-5, 5.2, 8),
+      new pc.Vec3(14, 5.6, 3), new pc.Vec3(-10, 5.4, -5), new pc.Vec3(6, 5.7, -12),
+      new pc.Vec3(-14, 5.3, -20), new pc.Vec3(12, 5.5, -22),
+    ];
+    // 7 blue icicles (counting puzzle answer) + extra transparent ones
+    iciclePositions.forEach((pos, i) => {
+      const isBlue = i < 7;
+      const mat = isBlue ? crystalMaterial : stalactiteMaterial;
+      const h = 0.8 + (i % 3) * 0.4;
+      this.app.root.addChild(this.makePrimitive('cone', mat, pos, new pc.Vec3(0.3, h, 0.3), `icicle-${i}`, false));
+    });
+    // Extra transparent ones
+    [new pc.Vec3(0, 5.6, 0), new pc.Vec3(-6, 5.4, -15), new pc.Vec3(10, 5.3, 10), new pc.Vec3(-15, 5.7, 5)].forEach((pos, i) => {
+      this.app.root.addChild(this.makePrimitive('cone', stalactiteMaterial, pos, new pc.Vec3(0.25, 0.7, 0.25), `icicle-clear-${i}`, false));
+    });
+
+    // Crystal formations
+    const crystalPositions = [
+      new pc.Vec3(-15, 0, 20), new pc.Vec3(15, 0, 18), new pc.Vec3(-16, 0, 5),
+      new pc.Vec3(16, 0, -5), new pc.Vec3(-14, 0, -18), new pc.Vec3(14, 0, -20),
+    ];
+    crystalPositions.forEach((pos, i) => {
+      const cluster = new pc.Entity(`crystal-${i}`);
+      cluster.setPosition(pos);
+      const h = 1.5 + (i % 3) * 0.5;
+      cluster.addChild(this.makePrimitive('box', crystalMaterial, new pc.Vec3(0, h / 2, 0), new pc.Vec3(0.5, h, 0.5), `crystal-main-${i}`));
+      cluster.addChild(this.makePrimitive('box', crystalMaterial, new pc.Vec3(0.4, h / 3, 0.3), new pc.Vec3(0.3, h * 0.6, 0.3), `crystal-side-${i}`));
+      // Crystal light
+      const cLight = new pc.Entity(`crystal-light-${i}`);
+      cLight.addComponent('light', { type: 'omni', color: new pc.Color(0.4, 0.7, 1), intensity: 0.4, range: 6 });
+      cLight.setPosition(pos.x, h, pos.z);
+      this.app.root.addChild(cLight);
+      this.app.root.addChild(cluster);
+      this.obstacleMap.push({ x: pos.x, z: pos.z, radius: 1.2 });
+    });
+
+    // Ice gate (research gate equivalent)
+    const iceGateMaterial = this.makeMaterial([0.5, 0.7, 0.9], [0.15, 0.2, 0.3]);
+    iceGateMaterial.emissiveIntensity = 1.2;
+    iceGateMaterial.update();
+    this.researchGateRoot.setLocalPosition(0, 0, -6.4);
+    this.app.root.addChild(this.researchGateRoot);
+    this.researchGateRoot.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(-2.2, 2.4, 0), new pc.Vec3(0.4, 4.8, 0.5), 'ice-gate-l'));
+    this.researchGateRoot.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(2.2, 2.4, 0), new pc.Vec3(0.4, 4.8, 0.5), 'ice-gate-r'));
+    this.researchGateRoot.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(0, 4.85, 0), new pc.Vec3(4.7, 0.4, 0.5), 'ice-gate-top'));
+    [-1.45, 0, 1.45].forEach((x, idx) => {
+      this.researchGateRoot.addChild(this.makePrimitive('box', iceGateMaterial, new pc.Vec3(x, 2.3, 0), new pc.Vec3(1.2, 4.4, 0.24), `ice-gate-panel-${idx}`));
+    });
+    this.obstacleMap.push(this.researchGateObstacle);
+    // Dividers
+    this.app.root.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(-7.8, 3, -6.4), new pc.Vec3(10.4, 6, 1), 'cave-divider-w'));
+    this.app.root.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(7.8, 3, -6.4), new pc.Vec3(10.4, 6, 1), 'cave-divider-e'));
+    [-13.4, -9.6, -6.1, 6.1, 9.6, 13.4].forEach((x, i) => {
+      this.obstacleMap.push({ x, z: -6.4, radius: i === 2 || i === 3 ? 0.8 : 1.1 });
+    });
+
+    // Frozen door
+    const frozenDoorMaterial = this.makeMaterial([0.4, 0.6, 0.85], [0.2, 0.3, 0.5]);
+    frozenDoorMaterial.emissiveIntensity = 1.5;
+    frozenDoorMaterial.update();
+    this.doorRoot.setLocalPosition(0, 0, FINAL_DOOR_Z);
+    this.app.root.addChild(this.doorRoot);
+    this.doorRoot.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(-4.05, 2.55, 0), new pc.Vec3(0.5, 5.1, 0.6), 'frozen-door-fl'));
+    this.doorRoot.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(4.05, 2.55, 0), new pc.Vec3(0.5, 5.1, 0.6), 'frozen-door-fr'));
+    this.doorRoot.addChild(this.makePrimitive('box', iceMaterial, new pc.Vec3(0, 5.1, 0), new pc.Vec3(8.5, 0.5, 0.6), 'frozen-door-ft'));
+    for (let i = 0; i < 5; i += 1) {
+      this.doorRoot.addChild(this.makePrimitive('box', frozenDoorMaterial, new pc.Vec3(-2.8 + i * 1.12, 2.52, 0), new pc.Vec3(1.04, 4.9, 0.38), `frozen-panel-${i}`));
+    }
+    PUZZLE_IDS.forEach((_, index) => {
+      const slotMat = this.makeMaterial([0.15, 0.2, 0.3], [0.03, 0.04, 0.06]);
+      const slot = this.makePrimitive('sphere', slotMat, new pc.Vec3(-3 + index * 1.2, 6.15, 0.22), new pc.Vec3(0.38, 0.38, 0.22), `frozen-slot-${index}`);
+      this.doorSlots.push(slot);
+      this.doorRoot.addChild(slot);
+    });
+    this.interactables.push({ kind: 'door', entity: this.doorRoot, prompt: { title: '빙결 문', detail: '빙결 조각 여섯 개를 모두 모아야 빙결 문이 열린다.', actionLabel: '문 열기' } });
+
+    // Puzzle stations
+    const stationSpecs: Array<{ id: PuzzleId; position: pc.Vec3 }> = [
+      { id: 'colors', position: new pc.Vec3(-12, 0, 16) },
+      { id: 'shapes', position: new pc.Vec3(12, 0, 16) },
+      { id: 'count', position: new pc.Vec3(0, 0, 4) },
+      { id: 'memory', position: new pc.Vec3(-12, 0, -16) },
+      { id: 'rhythm', position: new pc.Vec3(0, 0, -18) },
+      { id: 'switches', position: new pc.Vec3(12, 0, -16) },
+    ];
+    stationSpecs.forEach(({ id, position }) => {
+      const station = this.createPuzzleStation(id, STAGE_3_DEFINITIONS[id], position);
+      this.interactables.push(station);
+      this.puzzleStations.set(id, station);
+      this.obstacleMap.push({ x: position.x, z: position.z, radius: 1.55 });
+    });
+
+    // Hidden clue stations
+    const glowMat = this.makeMaterial([0.4, 0.7, 1], [0.3, 0.6, 1], 0.8);
+    glowMat.emissiveIntensity = 2.5;
+    glowMat.opacity = 0.6;
+    glowMat.blendType = pc.BLEND_ADDITIVE;
+    glowMat.depthWrite = false;
+    glowMat.update();
+    const clueMarkerMat = this.makeMaterial([0.6, 0.75, 0.88], [0.1, 0.12, 0.16]);
+    const clueRingMat = this.makeMaterial([0.5, 0.8, 1], [0.25, 0.35, 0.5]);
+    clueRingMat.emissiveIntensity = 1.4;
+    clueRingMat.update();
+
+    const room3Clues = [
+      { position: new pc.Vec3(-15, 0.3, 20), title: '결정 속 메모', body: '결정 안에 색 순서가 보인다: 빨강, 노랑, 초록, 파랑, 핑크, 파랑, 빨강.', prompt: { title: '결정 메모', detail: '결정 속에 뭔가 보인다.', actionLabel: '단서 보기' } },
+      { position: new pc.Vec3(16, 0.3, -5), title: '얼음 벽 각인', body: '벽에 도형이 새겨져 있다: 마름모, 세모, 별, 세모, 마름모. 대칭 구조다.', prompt: { title: '얼음 각인', detail: '벽에 무늬가 있다.', actionLabel: '단서 보기' } },
+      { position: new pc.Vec3(0, 5.0, -6.4), title: '천장 패턴', body: '천장에 레버 패턴이 그려져 있다: 꺼, 켜, 켜, 꺼, 켜, 켜, 꺼.', prompt: { title: '천장 패턴', detail: '위를 올려다보면 무늬가 보인다.', actionLabel: '단서 보기' } },
+      { position: new pc.Vec3(-14, 0.3, -18), title: '동굴 바닥 악보', body: '바닥에 음 높이가 새겨져 있다: 도, 미, 솔, 라, 시, 솔, 도.', prompt: { title: '바닥 악보', detail: '바닥에 뭔가 새겨져 있다.', actionLabel: '단서 보기' } },
+    ];
+    room3Clues.forEach((clue, i) => {
+      const anchor = new pc.Entity(`room3-clue-${i}`);
+      anchor.setPosition(clue.position);
+      this.app.root.addChild(anchor);
+      anchor.addChild(this.makePrimitive('cylinder', clueMarkerMat, new pc.Vec3(0, 0.02, 0), new pc.Vec3(0.7, 0.04, 0.7), `r3-clue-disc-${i}`));
+      anchor.addChild(this.makePrimitive('cylinder', clueRingMat, new pc.Vec3(0, 0.05, 0), new pc.Vec3(0.85, 0.03, 0.85), `r3-clue-ring-${i}`));
+      const glow = this.makePrimitive('sphere', glowMat, new pc.Vec3(0, 0.5, 0), new pc.Vec3(0.25, 0.25, 0.25), `r3-clue-glow-${i}`, false);
+      anchor.addChild(glow);
+      this.floatingEntities.push({ entity: glow, baseY: 0.5 });
+      this.interactables.push({ kind: 'clue', entity: anchor, prompt: clue.prompt, title: clue.title, body: clue.body });
+    });
+
+    this.playerRoot.setPosition(0, 0, PLAYER_START_Z);
+    this.playerRoot.setEulerAngles(0, 180, 0);
+  }
+
+  private buildRoom4(): void {
+    this.createPlayer();
+
+    // Sky Castle theme
+    const stoneMaterial = this.makeMaterial([0.85, 0.8, 0.7], [0.08, 0.07, 0.06]);
+    const darkStoneMaterial = this.makeMaterial([0.55, 0.52, 0.48], [0.05, 0.05, 0.04]);
+    const goldMaterial = this.makeMaterial([1, 0.85, 0.4], [0.3, 0.22, 0.06]);
+    goldMaterial.emissiveIntensity = 1.5;
+    goldMaterial.update();
+    const bannerMaterial = this.makeMaterial([0.8, 0.2, 0.25], [0.15, 0.03, 0.04]);
+    const silverBannerMaterial = this.makeMaterial([0.75, 0.78, 0.82], [0.1, 0.1, 0.12]);
+
+    // Bright sky + warm lighting
+    const cameraComponent = this.camera.camera;
+    if (cameraComponent) { cameraComponent.clearColor = new pc.Color(0.55, 0.75, 1); }
+    this.app.scene.ambientLight = new pc.Color(0.7, 0.72, 0.8);
+    const sun = this.app.root.findByName('sun') as pc.Entity | null;
+    if (sun?.light) { sun.light.color = new pc.Color(1, 0.95, 0.8); sun.light.intensity = 2.0; }
+    const fill = this.app.root.findByName('fill') as pc.Entity | null;
+    if (fill?.light) { fill.light.color = new pc.Color(0.8, 0.85, 1); fill.light.intensity = 0.8; }
+
+    // Castle floor + walls + battlements
+    this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(0, -0.5, 0), new pc.Vec3(ROOM_HALF_WIDTH * 2, 1, ROOM_HALF_DEPTH * 2), 'castle-floor'));
+    this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(-ROOM_HALF_WIDTH - 0.5, 3, 0), new pc.Vec3(1, 6, ROOM_HALF_DEPTH * 2), 'castle-wall-w'));
+    this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(ROOM_HALF_WIDTH + 0.5, 3, 0), new pc.Vec3(1, 6, ROOM_HALF_DEPTH * 2), 'castle-wall-e'));
+    this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(0, 3, ROOM_HALF_DEPTH + 0.5), new pc.Vec3(ROOM_HALF_WIDTH * 2 + 1, 6, 1), 'castle-wall-s'));
+    this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(-9.5, 3, -ROOM_HALF_DEPTH - 0.5), new pc.Vec3(21, 6, 1), 'castle-wall-nl'));
+    this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(9.5, 3, -ROOM_HALF_DEPTH - 0.5), new pc.Vec3(21, 6, 1), 'castle-wall-nr'));
+
+    // Battlements (merlons on top of walls)
+    for (let i = 0; i < 10; i += 1) {
+      const z = -24 + i * 5.4;
+      this.app.root.addChild(this.makePrimitive('box', darkStoneMaterial, new pc.Vec3(-ROOM_HALF_WIDTH - 0.5, 6.5, z), new pc.Vec3(1.2, 1.2, 1.8), `merlon-w-${i}`, false));
+      this.app.root.addChild(this.makePrimitive('box', darkStoneMaterial, new pc.Vec3(ROOM_HALF_WIDTH + 0.5, 6.5, z), new pc.Vec3(1.2, 1.2, 1.8), `merlon-e-${i}`, false));
+    }
+
+    // Tower pillars at corners
+    const towerMaterial = this.makeMaterial([0.6, 0.57, 0.52], [0.06, 0.06, 0.05]);
+    [new pc.Vec3(-18, 0, 26), new pc.Vec3(18, 0, 26), new pc.Vec3(-18, 0, -26), new pc.Vec3(18, 0, -26)].forEach((pos, i) => {
+      this.app.root.addChild(this.makePrimitive('cylinder', towerMaterial, new pc.Vec3(pos.x, 4, pos.z), new pc.Vec3(2.5, 8, 2.5), `tower-${i}`));
+      this.app.root.addChild(this.makePrimitive('cone', bannerMaterial, new pc.Vec3(pos.x, 8.5, pos.z), new pc.Vec3(3, 2, 3), `tower-roof-${i}`));
+      this.obstacleMap.push({ x: pos.x, z: pos.z, radius: 1.8 });
+    });
+
+    // Flags on walls — 10 gold + 6 silver (counting answer = 10)
+    const flagPositions = [
+      // Gold flags
+      new pc.Vec3(-18, 4.5, 20), new pc.Vec3(-18, 4.5, 12), new pc.Vec3(-18, 4.5, 4),
+      new pc.Vec3(-18, 4.5, -4), new pc.Vec3(-18, 4.5, -12),
+      new pc.Vec3(18, 4.5, 20), new pc.Vec3(18, 4.5, 12), new pc.Vec3(18, 4.5, 4),
+      new pc.Vec3(18, 4.5, -4), new pc.Vec3(18, 4.5, -12),
+      // Silver flags
+      new pc.Vec3(-18, 4.5, 16), new pc.Vec3(-18, 4.5, -8), new pc.Vec3(-18, 4.5, -20),
+      new pc.Vec3(18, 4.5, 16), new pc.Vec3(18, 4.5, -8), new pc.Vec3(18, 4.5, -20),
+    ];
+    flagPositions.forEach((pos, i) => {
+      const isGold = i < 10;
+      const mat = isGold ? goldMaterial : silverBannerMaterial;
+      this.app.root.addChild(this.makePrimitive('box', mat, pos, new pc.Vec3(0.15, 1.2, 0.6), `flag-${i}`, false));
+    });
+
+    // Clouds outside (visible from open castle)
+    const cloudMat = this.makeMaterial([1, 1, 1], [0.2, 0.2, 0.2]);
+    for (let i = 0; i < 8; i += 1) {
+      const seed = (i * 4111 + 2719) % 2719;
+      const cx = -25 + (seed % 500) / 10;
+      const cy = -3 + ((seed * 3) % 30) / 10;
+      const cz = -30 + ((seed * 7) % 600) / 10;
+      const cloud = this.makePrimitive('sphere', cloudMat, new pc.Vec3(cx, cy, cz), new pc.Vec3(6, 2, 4), `cloud-${i}`, false);
+      this.app.root.addChild(cloud);
+    }
+
+    // Castle gate divider
+    this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(-7.8, 3, -6.4), new pc.Vec3(10.4, 6, 1), 'castle-divider-w'));
+    this.app.root.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(7.8, 3, -6.4), new pc.Vec3(10.4, 6, 1), 'castle-divider-e'));
+    this.app.root.addChild(this.makePrimitive('box', goldMaterial, new pc.Vec3(0, 5.1, -6.4), new pc.Vec3(5.4, 1.1, 1), 'castle-divider-beam'));
+    this.researchGateRoot.setLocalPosition(0, 0, -6.4);
+    this.app.root.addChild(this.researchGateRoot);
+    this.researchGateRoot.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(-2.2, 2.4, 0), new pc.Vec3(0.4, 4.8, 0.5), 'castle-gate-l'));
+    this.researchGateRoot.addChild(this.makePrimitive('box', stoneMaterial, new pc.Vec3(2.2, 2.4, 0), new pc.Vec3(0.4, 4.8, 0.5), 'castle-gate-r'));
+    this.researchGateRoot.addChild(this.makePrimitive('box', goldMaterial, new pc.Vec3(0, 4.85, 0), new pc.Vec3(4.7, 0.4, 0.5), 'castle-gate-top'));
+    [-1.45, 0, 1.45].forEach((x, idx) => {
+      this.researchGateRoot.addChild(this.makePrimitive('box', this.makeMaterial([0.7, 0.5, 0.25], [0.12, 0.08, 0.03]), new pc.Vec3(x, 2.3, 0), new pc.Vec3(1.2, 4.4, 0.24), `castle-gate-panel-${idx}`));
+    });
+    this.obstacleMap.push(this.researchGateObstacle);
+    [-13.4, -9.6, -6.1, 6.1, 9.6, 13.4].forEach((x, i) => {
+      this.obstacleMap.push({ x, z: -6.4, radius: i === 2 || i === 3 ? 0.8 : 1.1 });
+    });
+
+    // Grand door (sky door)
+    this.doorRoot.setLocalPosition(0, 0, FINAL_DOOR_Z);
+    this.app.root.addChild(this.doorRoot);
+    this.doorRoot.addChild(this.makePrimitive('box', darkStoneMaterial, new pc.Vec3(-4.05, 2.55, 0), new pc.Vec3(0.5, 5.1, 0.6), 'sky-door-fl'));
+    this.doorRoot.addChild(this.makePrimitive('box', darkStoneMaterial, new pc.Vec3(4.05, 2.55, 0), new pc.Vec3(0.5, 5.1, 0.6), 'sky-door-fr'));
+    this.doorRoot.addChild(this.makePrimitive('box', goldMaterial, new pc.Vec3(0, 5.1, 0), new pc.Vec3(8.5, 0.5, 0.6), 'sky-door-ft'));
+    for (let i = 0; i < 5; i += 1) {
+      this.doorRoot.addChild(this.makePrimitive('box', this.makeMaterial([0.7, 0.5, 0.25], [0.1, 0.07, 0.03]), new pc.Vec3(-2.8 + i * 1.12, 2.52, 0), new pc.Vec3(1.04, 4.9, 0.38), `sky-panel-${i}`));
+    }
+    PUZZLE_IDS.forEach((_, index) => {
+      const slotMat = this.makeMaterial([0.25, 0.22, 0.18], [0.04, 0.04, 0.03]);
+      const slot = this.makePrimitive('sphere', slotMat, new pc.Vec3(-3 + index * 1.2, 6.15, 0.22), new pc.Vec3(0.38, 0.38, 0.22), `sky-slot-${index}`);
+      this.doorSlots.push(slot);
+      this.doorRoot.addChild(slot);
+    });
+    this.interactables.push({ kind: 'door', entity: this.doorRoot, prompt: { title: '천공 문', detail: '천공 조각 여섯 개를 모두 모아야 천공 문이 열린다.', actionLabel: '문 열기' } });
+
+    // Puzzle stations
+    const s4Specs: Array<{ id: PuzzleId; position: pc.Vec3 }> = [
+      { id: 'colors', position: new pc.Vec3(-12, 0, 16) },
+      { id: 'shapes', position: new pc.Vec3(12, 0, 14) },
+      { id: 'count', position: new pc.Vec3(0, 0, 4) },
+      { id: 'memory', position: new pc.Vec3(-12, 0, -16) },
+      { id: 'rhythm', position: new pc.Vec3(0, 0, -18) },
+      { id: 'switches', position: new pc.Vec3(12, 0, -16) },
+    ];
+    s4Specs.forEach(({ id, position }) => {
+      const station = this.createPuzzleStation(id, STAGE_4_DEFINITIONS[id], position);
+      this.interactables.push(station);
+      this.puzzleStations.set(id, station);
+      this.obstacleMap.push({ x: position.x, z: position.z, radius: 1.55 });
+    });
+
+    // Hidden clue stations
+    const glowMat = this.makeMaterial([1, 0.85, 0.4], [0.8, 0.6, 0.2], 0.8);
+    glowMat.emissiveIntensity = 2.5;
+    glowMat.opacity = 0.6;
+    glowMat.blendType = pc.BLEND_ADDITIVE;
+    glowMat.depthWrite = false;
+    glowMat.update();
+    const clueMarkerMat = this.makeMaterial([0.88, 0.82, 0.62], [0.12, 0.1, 0.05]);
+    const clueRingMat = this.makeMaterial([1, 0.9, 0.5], [0.3, 0.25, 0.08]);
+    clueRingMat.emissiveIntensity = 1.4;
+    clueRingMat.update();
+
+    const room4Clues = [
+      { position: new pc.Vec3(-18, 1.5, 20), title: '타워 벽 각인', body: '타워 벽에 색 순서가 새겨져 있다: 파랑, 초록, 노랑, 빨강, 핑크, 빨강, 파랑.', prompt: { title: '타워 각인', detail: '타워 벽에 뭔가 새겨져 있다.', actionLabel: '단서 보기' } },
+      { position: new pc.Vec3(18, 1.5, -12), title: '성벽 문양', body: '성벽에 도형이 새겨져 있다: 세모, 별, 원, 별, 세모.', prompt: { title: '성벽 문양', detail: '성벽에 무늬가 있다.', actionLabel: '단서 보기' } },
+      { position: new pc.Vec3(0, 5.0, -6.4), title: '성문 위 패턴', body: '성문 위에 장치 패턴이 있다: 켜, 꺼, 켜, 꺼, 켜, 꺼, 켜.', prompt: { title: '성문 패턴', detail: '성문 위를 올려다보면 패턴이 보인다.', actionLabel: '단서 보기' } },
+      { position: new pc.Vec3(-12, 0.3, -16), title: '바닥 악보', body: '바닥에 멜로디가 새겨져 있다: 라, 라, 라, 도, 시, 솔, 미.', prompt: { title: '바닥 악보', detail: '바닥에 뭔가 새겨져 있다.', actionLabel: '단서 보기' } },
+    ];
+    room4Clues.forEach((clue, i) => {
+      const anchor = new pc.Entity(`room4-clue-${i}`);
+      anchor.setPosition(clue.position);
+      this.app.root.addChild(anchor);
+      anchor.addChild(this.makePrimitive('cylinder', clueMarkerMat, new pc.Vec3(0, 0.02, 0), new pc.Vec3(0.7, 0.04, 0.7), `r4-clue-disc-${i}`));
+      anchor.addChild(this.makePrimitive('cylinder', clueRingMat, new pc.Vec3(0, 0.05, 0), new pc.Vec3(0.85, 0.03, 0.85), `r4-clue-ring-${i}`));
+      const glow = this.makePrimitive('sphere', glowMat, new pc.Vec3(0, 0.5, 0), new pc.Vec3(0.25, 0.25, 0.25), `r4-clue-glow-${i}`, false);
+      anchor.addChild(glow);
+      this.floatingEntities.push({ entity: glow, baseY: 0.5 });
+      this.interactables.push({ kind: 'clue', entity: anchor, prompt: clue.prompt, title: clue.title, body: clue.body });
+    });
+
     this.playerRoot.setPosition(0, 0, PLAYER_START_Z);
     this.playerRoot.setEulerAngles(0, 180, 0);
   }

@@ -1,5 +1,7 @@
 export type PuzzleId = 'colors' | 'shapes' | 'count' | 'memory' | 'rhythm' | 'switches';
 
+export type StageId = 1 | 2 | 3 | 4;
+
 export interface ProgressState {
   colors: boolean;
   shapes: boolean;
@@ -17,7 +19,9 @@ export interface PromptState {
 }
 
 export interface GameProgress {
-  stage: 1 | 2;
+  stage: StageId;
   stage1: ProgressState;
   stage2: ProgressState;
+  stage3: ProgressState;
+  stage4: ProgressState;
 }

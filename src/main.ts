@@ -32,10 +32,10 @@ ui.setHandlers({
   onAction: () => game.handleAction(),
   onReset: () => game.resetStage(),
   onNextStage: () => {
-    if (game.getCurrentStage() === 2) {
+    if (game.getCurrentStage() >= 4) {
       game.resetStage();
     } else {
-      game.transitionToStage2();
+      game.transitionToNextStage();
     }
   },
 });

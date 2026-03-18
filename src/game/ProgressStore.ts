@@ -1,5 +1,5 @@
 import { PUZZLE_IDS } from './puzzles';
-import type { GameProgress, ProgressState } from './types';
+import type { GameProgress, ProgressState, StageId } from './types';
 
 const STORAGE_KEY = 'jennyworld-progress-v2';
 const LEGACY_KEY = 'jennyworld-stage-1-progress';
@@ -20,6 +20,8 @@ export const createInitialGameProgress = (): GameProgress => ({
   stage: 1,
   stage1: createInitialProgress(),
   stage2: createInitialProgress(),
+  stage3: createInitialProgress(),
+  stage4: createInitialProgress(),
 });
 
 export const countSolvedPuzzles = (progress: ProgressState): number => {
@@ -36,38 +38,39 @@ const parseProgressState = (parsed: Partial<ProgressState>): ProgressState => ({
   cleared: toBoolean(parsed.cleared),
 });
 
+const validStage = (value: unknown): StageId => {
+  if (value === 1 || value === 2 || value === 3 || value === 4) {
+    return value;
+  }
+  return 1;
+};
+
 export class ProgressStore {
   load(): GameProgress {
-    // Try new format first
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<GameProgress>;
         return {
-          stage: parsed.stage === 2 ? 2 : 1,
+          stage: validStage(parsed.stage),
           stage1: parseProgressState((parsed.stage1 ?? {}) as Partial<ProgressState>),
           stage2: parseProgressState((parsed.stage2 ?? {}) as Partial<ProgressState>),
+          stage3: parseProgressState((parsed.stage3 ?? {}) as Partial<ProgressState>),
+          stage4: parseProgressState((parsed.stage4 ?? {}) as Partial<ProgressState>),
         };
       }
     } catch {
-      // Fall through to legacy
+      // Fall through
     }
 
-    // Try legacy format (migrate)
     try {
       const raw = window.localStorage.getItem(LEGACY_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<ProgressState>;
-        const gameProgress: GameProgress = {
-          stage: 1,
-          stage1: parseProgressState(parsed),
-          stage2: createInitialProgress(),
-        };
-        // Migrate to new format
+        const gameProgress = createInitialGameProgress();
+        gameProgress.stage1 = parseProgressState(parsed);
         this.save(gameProgress);
-        try {
-          window.localStorage.removeItem(LEGACY_KEY);
-        } catch { /* ignore */ }
+        try { window.localStorage.removeItem(LEGACY_KEY); } catch { /* ignore */ }
         return gameProgress;
       }
     } catch {
@@ -81,7 +84,7 @@ export class ProgressStore {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     } catch {
-      // Ignore storage quota/privacy failures and keep the in-memory state usable.
+      // Ignore storage quota/privacy failures
     }
   }
 

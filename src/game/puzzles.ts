@@ -159,6 +159,142 @@ export const STAGE_2_FINAL_DOOR_ANSWER = {
   note: 'mi',
 } as const;
 
+// === Stage 3: 얼음 동굴 (Ice Cave) ===
+export const STAGE_3_TITLE = '얼음 동굴';
+export const STAGE_3_SUBTITLE = '얼어붙은 동굴 깊은 곳에 숨겨진 6개의 빙결 퍼즐을 풀고 탈출하자.';
+
+export const STAGE_3_DEFINITIONS: Record<PuzzleId, PuzzleDefinition> = {
+  colors: {
+    title: '얼음 프리즘',
+    subtitle: '프리즘에 비친 일곱 가지 빛을 순서대로 맞추자.',
+    prompt: '동굴 벽에 새겨진 빛의 순서를 찾아보자.',
+    hint: '따뜻한 색에서 차가운 색으로, 다시 따뜻한 색으로.',
+    success: '프리즘이 빛나며 첫 번째 빙결 조각이 나왔다.',
+    pedestalColor: [0.6, 0.85, 1],
+  },
+  shapes: {
+    title: '결정 자물쇠',
+    subtitle: '얼음 결정 다섯 개를 올바른 배열로 맞추자.',
+    prompt: '동굴 천장의 결정 패턴을 관찰하자.',
+    hint: '대칭 구조야. 가운데를 기준으로 양쪽이 같아.',
+    success: '결정 자물쇠가 풀리며 두 번째 빙결 조각을 얻었다.',
+    pedestalColor: [0.4, 0.65, 0.95],
+  },
+  count: {
+    title: '고드름 세기',
+    subtitle: '동굴 천장에 매달린 파란 고드름만 세어 보자.',
+    prompt: '투명한 고드름은 빼고, 파란 고드름만 세자.',
+    hint: '투명 고드름 4개에 속지 말고, 파란빛만 정확히 세자.',
+    success: '고드름이 반짝이며 세 번째 빙결 조각이 떨어졌다.',
+    pedestalColor: [0.5, 0.8, 1],
+  },
+  memory: {
+    title: '빙결 기억판',
+    subtitle: '일곱 번 깜빡이는 빙결 순서를 따라 누르자.',
+    prompt: '빙결 빛의 순서를 기억해서 재현하자.',
+    hint: '첫 네 개와 마지막 세 개가 반대 순서야.',
+    success: '빙결 기억판이 열리며 네 번째 빙결 조각이 나왔다.',
+    pedestalColor: [0.7, 0.9, 1],
+  },
+  rhythm: {
+    title: '얼음 종소리',
+    subtitle: '일곱 개의 얼음 종을 올바른 순서로 울리자.',
+    prompt: '동굴에 울리는 메아리를 기억하자.',
+    hint: '낮은 음에서 시작해 높이 올라갔다가 급히 내려와.',
+    success: '종소리가 울리며 다섯 번째 빙결 조각이 나타났다.',
+    pedestalColor: [0.55, 0.7, 0.95],
+  },
+  switches: {
+    title: '얼음 레버',
+    subtitle: '일곱 레버를 목표 패턴에 맞추자. 연결된 레버도 같이 움직인다!',
+    prompt: '동굴 벽의 얼음 패턴을 찾아 레버를 조합하자.',
+    hint: '가운데 레버를 먼저 맞추고 양쪽으로 퍼져 나가자.',
+    success: '얼음 회로가 연결되며 마지막 빙결 조각이 나왔다.',
+    pedestalColor: [0.45, 0.75, 0.98],
+  },
+};
+
+export const STAGE_3_COLOR_SEQUENCE = ['red', 'yellow', 'green', 'blue', 'pink', 'blue', 'red'] as const;
+export const STAGE_3_SHAPE_ORDER = ['diamond', 'triangle', 'star', 'triangle', 'diamond'] as const;
+export const STAGE_3_COUNTING_OPTIONS = [6, 7, 8, 9, 10, 11] as const;
+export const STAGE_3_COUNTING_ANSWER = 7;
+export const STAGE_3_MEMORY_SEQUENCE = ['sky', 'mint', 'sun', 'pink', 'sun', 'mint', 'sky'] as const;
+export const STAGE_3_RHYTHM_SEQUENCE = ['do', 'mi', 'sol', 'la', 'ti', 'sol', 'do'] as const;
+export const STAGE_3_SWITCH_TARGET = [false, true, true, false, true, true, false] as const;
+export const STAGE_3_SWITCH_LINKED = true;
+export const STAGE_3_FINAL_DOOR_COLOR_CHOICES = ['red', 'blue', 'green'] as const;
+export const STAGE_3_FINAL_DOOR_SHAPE_CHOICES = ['star', 'triangle', 'diamond'] as const;
+export const STAGE_3_FINAL_DOOR_NOTE_CHOICES = ['do', 'ti', 'sol'] as const;
+export const STAGE_3_FINAL_DOOR_ANSWER = { color: 'blue', shape: 'star', note: 'do' } as const;
+
+// === Stage 4: 하늘 성 (Sky Castle) ===
+export const STAGE_4_TITLE = '하늘 성';
+export const STAGE_4_SUBTITLE = '구름 위의 성에 숨겨진 6개의 천공 퍼즐을 풀고 마지막 문을 열자.';
+
+export const STAGE_4_DEFINITIONS: Record<PuzzleId, PuzzleDefinition> = {
+  colors: {
+    title: '무지개 아치',
+    subtitle: '하늘에 걸린 무지개의 일곱 색을 순서대로 맞추자.',
+    prompt: '성벽의 스테인드글라스에서 단서를 찾아보자.',
+    hint: '무지개는 빨주노초파남보, 하지만 여기서는 다른 순서야.',
+    success: '무지개 아치가 빛나며 첫 번째 천공 조각이 나왔다.',
+    pedestalColor: [1, 0.8, 0.5],
+  },
+  shapes: {
+    title: '별자리 배열',
+    subtitle: '다섯 별자리를 하늘의 배열대로 놓자.',
+    prompt: '성 꼭대기에서 밤하늘을 올려다보자.',
+    hint: '각 꼭짓점 수가 줄었다 늘었다를 반복해.',
+    success: '별자리가 맞춰지며 두 번째 천공 조각을 얻었다.',
+    pedestalColor: [0.9, 0.7, 0.3],
+  },
+  count: {
+    title: '깃발 세기',
+    subtitle: '성벽에 걸린 금색 깃발만 세어 보자.',
+    prompt: '은색 깃발과 구분해서 금색만 세자.',
+    hint: '은색 깃발 6개에 속지 말고, 금색만 세자.',
+    success: '깃발이 펄럭이며 세 번째 천공 조각이 떨어졌다.',
+    pedestalColor: [1, 0.85, 0.4],
+  },
+  memory: {
+    title: '구름 기억판',
+    subtitle: '일곱 번 깜빡이는 구름 순서를 따라 누르자.',
+    prompt: '구름의 색 순서를 기억해서 재현하자.',
+    hint: '같은 색이 세 번 나와. 그 위치를 먼저 기억하자.',
+    success: '구름 기억판이 열리며 네 번째 천공 조각이 나왔다.',
+    pedestalColor: [1, 0.95, 0.8],
+  },
+  rhythm: {
+    title: '바람의 노래',
+    subtitle: '일곱 개의 바람 소리를 올바른 순서로 연주하자.',
+    prompt: '성 탑에서 들리는 바람의 멜로디를 기억하자.',
+    hint: '같은 음이 세 번 연속으로 나온 뒤 급변해.',
+    success: '바람의 노래가 울리며 다섯 번째 천공 조각이 나타났다.',
+    pedestalColor: [0.85, 0.75, 0.95],
+  },
+  switches: {
+    title: '성문 장치',
+    subtitle: '일곱 장치를 목표 패턴에 맞추자. 연결된 장치도 같이 움직인다!',
+    prompt: '성벽 문양에서 장치 패턴을 찾아보자.',
+    hint: '양쪽 끝부터 안쪽으로 맞춰 나가자.',
+    success: '성문 장치가 맞아떨어지며 마지막 천공 조각이 나왔다.',
+    pedestalColor: [0.95, 0.85, 0.65],
+  },
+};
+
+export const STAGE_4_COLOR_SEQUENCE = ['blue', 'green', 'yellow', 'red', 'pink', 'red', 'blue'] as const;
+export const STAGE_4_SHAPE_ORDER = ['triangle', 'star', 'circle', 'star', 'triangle'] as const;
+export const STAGE_4_COUNTING_OPTIONS = [7, 8, 9, 10, 11, 12] as const;
+export const STAGE_4_COUNTING_ANSWER = 10;
+export const STAGE_4_MEMORY_SEQUENCE = ['pink', 'pink', 'sky', 'mint', 'sun', 'pink', 'mint'] as const;
+export const STAGE_4_RHYTHM_SEQUENCE = ['la', 'la', 'la', 'do', 'ti', 'sol', 'mi'] as const;
+export const STAGE_4_SWITCH_TARGET = [true, false, true, false, true, false, true] as const;
+export const STAGE_4_SWITCH_LINKED = true;
+export const STAGE_4_FINAL_DOOR_COLOR_CHOICES = ['blue', 'red', 'pink'] as const;
+export const STAGE_4_FINAL_DOOR_SHAPE_CHOICES = ['circle', 'star', 'triangle'] as const;
+export const STAGE_4_FINAL_DOOR_NOTE_CHOICES = ['la', 'mi', 'do'] as const;
+export const STAGE_4_FINAL_DOOR_ANSWER = { color: 'red', shape: 'circle', note: 'la' } as const;
+
 export const COLOR_LABELS: Record<ColorButton, string> = {
   red: '빨강',
   blue: '파랑',

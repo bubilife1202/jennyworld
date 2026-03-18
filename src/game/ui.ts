@@ -34,6 +34,18 @@ import {
   STAGE_2_FINAL_DOOR_NOTE_CHOICES,
   SWITCH_LINKED,
   STAGE_2_SWITCH_LINKED,
+  STAGE_3_DEFINITIONS, STAGE_3_COLOR_SEQUENCE, STAGE_3_SHAPE_ORDER,
+  STAGE_3_COUNTING_OPTIONS, STAGE_3_COUNTING_ANSWER,
+  STAGE_3_MEMORY_SEQUENCE, STAGE_3_RHYTHM_SEQUENCE,
+  STAGE_3_SWITCH_TARGET, STAGE_3_SWITCH_LINKED,
+  STAGE_3_FINAL_DOOR_ANSWER, STAGE_3_FINAL_DOOR_COLOR_CHOICES,
+  STAGE_3_FINAL_DOOR_SHAPE_CHOICES, STAGE_3_FINAL_DOOR_NOTE_CHOICES,
+  STAGE_4_DEFINITIONS, STAGE_4_COLOR_SEQUENCE, STAGE_4_SHAPE_ORDER,
+  STAGE_4_COUNTING_OPTIONS, STAGE_4_COUNTING_ANSWER,
+  STAGE_4_MEMORY_SEQUENCE, STAGE_4_RHYTHM_SEQUENCE,
+  STAGE_4_SWITCH_TARGET, STAGE_4_SWITCH_LINKED,
+  STAGE_4_FINAL_DOOR_ANSWER, STAGE_4_FINAL_DOOR_COLOR_CHOICES,
+  STAGE_4_FINAL_DOOR_SHAPE_CHOICES, STAGE_4_FINAL_DOOR_NOTE_CHOICES,
   type MemoryButton,
   type ShapeButton,
   type RhythmButton,
@@ -137,7 +149,7 @@ export class OverlayUI {
   private activeSecondaryPanel: SecondaryPanelKey | null = 'ability';
   private secondaryPanelBeforeModal: SecondaryPanelKey | null = null;
   private syncingSecondaryPanels = false;
-  private currentStage: 1 | 2 = 1;
+  private currentStage: number = 1;
   private lastMinimapJson = '';
   private minimapPlayerDot: HTMLDivElement | null = null;
   private lastPlayerLeft = '';
@@ -290,7 +302,7 @@ export class OverlayUI {
     this.handlers = handlers;
   }
 
-  setStage(stage: 1 | 2): void {
+  setStage(stage: number): void {
     this.currentStage = stage;
     const labelEl = this.canvas.closest('.game-shell')?.querySelector<HTMLSpanElement>('.stars-label');
     if (labelEl) {
@@ -299,43 +311,43 @@ export class OverlayUI {
   }
 
   private get stageColorSequence() {
-    return this.currentStage === 1 ? COLOR_SEQUENCE : STAGE_2_COLOR_SEQUENCE;
+    return [COLOR_SEQUENCE, STAGE_2_COLOR_SEQUENCE, STAGE_3_COLOR_SEQUENCE, STAGE_4_COLOR_SEQUENCE][this.currentStage - 1];
   }
   private get stageShapeOrder() {
-    return this.currentStage === 1 ? SHAPE_ORDER : STAGE_2_SHAPE_ORDER;
+    return [SHAPE_ORDER, STAGE_2_SHAPE_ORDER, STAGE_3_SHAPE_ORDER, STAGE_4_SHAPE_ORDER][this.currentStage - 1];
   }
   private get stageCountingOptions(): readonly number[] {
-    return this.currentStage === 1 ? COUNTING_OPTIONS : STAGE_2_COUNTING_OPTIONS;
+    return [COUNTING_OPTIONS, STAGE_2_COUNTING_OPTIONS, STAGE_3_COUNTING_OPTIONS, STAGE_4_COUNTING_OPTIONS][this.currentStage - 1];
   }
   private get stageCountingAnswer(): number {
-    return this.currentStage === 1 ? COUNTING_ANSWER : STAGE_2_COUNTING_ANSWER;
+    return [COUNTING_ANSWER, STAGE_2_COUNTING_ANSWER, STAGE_3_COUNTING_ANSWER, STAGE_4_COUNTING_ANSWER][this.currentStage - 1];
   }
   private get stageMemorySequence() {
-    return this.currentStage === 1 ? MEMORY_SEQUENCE : STAGE_2_MEMORY_SEQUENCE;
+    return [MEMORY_SEQUENCE, STAGE_2_MEMORY_SEQUENCE, STAGE_3_MEMORY_SEQUENCE, STAGE_4_MEMORY_SEQUENCE][this.currentStage - 1];
   }
   private get stageRhythmSequence(): readonly RhythmButton[] {
-    return this.currentStage === 1 ? RHYTHM_SEQUENCE : STAGE_2_RHYTHM_SEQUENCE;
+    return [RHYTHM_SEQUENCE, STAGE_2_RHYTHM_SEQUENCE, STAGE_3_RHYTHM_SEQUENCE, STAGE_4_RHYTHM_SEQUENCE][this.currentStage - 1];
   }
   private get stageSwitchTarget(): readonly boolean[] {
-    return this.currentStage === 1 ? SWITCH_TARGET : STAGE_2_SWITCH_TARGET;
+    return [SWITCH_TARGET, STAGE_2_SWITCH_TARGET, STAGE_3_SWITCH_TARGET, STAGE_4_SWITCH_TARGET][this.currentStage - 1];
   }
   private get stageSwitchLinked(): boolean {
-    return this.currentStage === 1 ? SWITCH_LINKED : STAGE_2_SWITCH_LINKED;
+    return [SWITCH_LINKED, STAGE_2_SWITCH_LINKED, STAGE_3_SWITCH_LINKED, STAGE_4_SWITCH_LINKED][this.currentStage - 1];
   }
   private get stagePuzzleDefs() {
-    return this.currentStage === 1 ? PUZZLE_DEFINITIONS : STAGE_2_DEFINITIONS;
+    return [PUZZLE_DEFINITIONS, STAGE_2_DEFINITIONS, STAGE_3_DEFINITIONS, STAGE_4_DEFINITIONS][this.currentStage - 1];
   }
   private get stageFinalDoorAnswer() {
-    return this.currentStage === 1 ? FINAL_DOOR_ANSWER : STAGE_2_FINAL_DOOR_ANSWER;
+    return [FINAL_DOOR_ANSWER, STAGE_2_FINAL_DOOR_ANSWER, STAGE_3_FINAL_DOOR_ANSWER, STAGE_4_FINAL_DOOR_ANSWER][this.currentStage - 1];
   }
   private get stageFinalDoorColorChoices() {
-    return this.currentStage === 1 ? FINAL_DOOR_COLOR_CHOICES : STAGE_2_FINAL_DOOR_COLOR_CHOICES;
+    return [FINAL_DOOR_COLOR_CHOICES, STAGE_2_FINAL_DOOR_COLOR_CHOICES, STAGE_3_FINAL_DOOR_COLOR_CHOICES, STAGE_4_FINAL_DOOR_COLOR_CHOICES][this.currentStage - 1];
   }
   private get stageFinalDoorShapeChoices() {
-    return this.currentStage === 1 ? FINAL_DOOR_SHAPE_CHOICES : STAGE_2_FINAL_DOOR_SHAPE_CHOICES;
+    return [FINAL_DOOR_SHAPE_CHOICES, STAGE_2_FINAL_DOOR_SHAPE_CHOICES, STAGE_3_FINAL_DOOR_SHAPE_CHOICES, STAGE_4_FINAL_DOOR_SHAPE_CHOICES][this.currentStage - 1];
   }
   private get stageFinalDoorNoteChoices() {
-    return this.currentStage === 1 ? FINAL_DOOR_NOTE_CHOICES : STAGE_2_FINAL_DOOR_NOTE_CHOICES;
+    return [FINAL_DOOR_NOTE_CHOICES, STAGE_2_FINAL_DOOR_NOTE_CHOICES, STAGE_3_FINAL_DOOR_NOTE_CHOICES, STAGE_4_FINAL_DOOR_NOTE_CHOICES][this.currentStage - 1];
   }
 
   focusCanvas(): void {
