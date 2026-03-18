@@ -515,7 +515,11 @@ export class OverlayUI {
     this.restoreSecondaryPanelsAfterModal();
   }
 
-  showTransition(text: string): Promise<void> {
+  showTransition(text: string, stageIndex = 0): Promise<void> {
+    const bg = ['#ddf0ff', '#141933', '#0d1426', '#8cbfff'][stageIndex] || '#fff';
+    const ink = stageIndex === 1 || stageIndex === 2 ? '#fffdf4' : '#1d2340';
+    this.transitionOverlay.style.background = bg;
+    this.transitionText.style.color = ink;
     this.transitionText.textContent = text;
     this.transitionOverlay.classList.remove('is-hidden');
     this.transitionOverlay.classList.add('is-fading-in');

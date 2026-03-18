@@ -117,6 +117,7 @@ export class JennyworldGame {
   private nearestInteractable: Interactable | null = null;
   private isResearchGateOpening = false;
   private researchGateOpenAmount = 0;
+  private researchGateGlowTimer = 0;
   private isDoorOpening = false;
   private doorOpenAmount = 0;
   private clearShown = false;
@@ -348,7 +349,7 @@ export class JennyworldGame {
     }
     this.isTransitioning = true;
     try {
-      await this.ui.showTransition('교실로 돌아가는 중...');
+      await this.ui.showTransition('교실로 돌아가는 중...', 0);
 
       this.clearScene();
 
@@ -357,6 +358,7 @@ export class JennyworldGame {
       this.clearShown = false;
       this.isResearchGateOpening = false;
       this.researchGateOpenAmount = 0;
+      this.researchGateGlowTimer = 0;
       this.isDoorOpening = false;
       this.doorOpenAmount = 0;
       this.timeElapsed = 0;
@@ -1028,9 +1030,14 @@ export class JennyworldGame {
 
       station.orbMaterial.diffuse = solved ? SOLVED_ORB_DIFFUSE : UNSOLVED_ORB_DIFFUSE;
       station.orbMaterial.emissive = solved ? SOLVED_ORB_EMISSIVE : UNSOLVED_ORB_EMISSIVE;
-      station.orbMaterial.emissiveIntensity = solved ? 1.9 : 1.4;
+      station.orbMaterial.emissiveIntensity = solved ? 3.2 : 1.4;
+      station.orbMaterial.opacity = solved ? 0.55 : 1;
+      station.orbMaterial.blendType = solved ? pc.BLEND_ADDITIVE : pc.BLEND_NONE;
       station.orbMaterial.update();
-      station.orb.enabled = !solved;
+      const floater = this.floatingEntities.find(f => f.entity === station.orb);
+      if (floater) {
+        floater.baseY = solved ? 4.8 : 3.45;
+      }
     });
 
     PUZZLE_IDS.forEach((puzzleId, index) => {
@@ -1471,6 +1478,20 @@ export class JennyworldGame {
       return;
     }
 
+    // Glow phase: panels pulse for 0.5s before rising
+    if (this.researchGateGlowTimer < 0.5 && this.researchGateOpenAmount <= 0) {
+      this.researchGateGlowTimer += dt;
+      const pulse = Math.sin(this.researchGateGlowTimer * Math.PI / 0.5);
+      this.researchGateRoot.children.forEach((child) => {
+        const mat = (child as pc.Entity).render?.meshInstances[0]?.material;
+        if (mat instanceof pc.StandardMaterial && child.name.includes('panel')) {
+          mat.emissiveIntensity = 0.5 + pulse * 3;
+          mat.update();
+        }
+      });
+      return;
+    }
+
     this.researchGateOpenAmount = Math.min(1, this.researchGateOpenAmount + dt * 0.9);
     const eased = pc.math.smoothstep(0, 1, this.researchGateOpenAmount);
     this.researchGateRoot.setLocalPosition(0, eased * 4.6, -6.4);
@@ -1548,7 +1569,7 @@ export class JennyworldGame {
     this.isTransitioning = true;
     try {
       const stageNames = ['', '별빛 정원', '얼음 동굴', '하늘 성'];
-      await this.ui.showTransition(`${stageNames[nextStage - 1]}(으)로 이동 중...`);
+      await this.ui.showTransition(`${stageNames[nextStage - 1]}(으)로 이동 중...`, nextStage - 1);
 
       this.clearScene();
       this.currentStage = nextStage;
@@ -1556,6 +1577,7 @@ export class JennyworldGame {
       this.clearShown = false;
       this.isResearchGateOpening = false;
       this.researchGateOpenAmount = 0;
+      this.researchGateGlowTimer = 0;
       this.isDoorOpening = false;
       this.doorOpenAmount = 0;
       this.hintTimer = 0;
