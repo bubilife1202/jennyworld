@@ -842,10 +842,11 @@ export class JennyworldGame {
 
     PUZZLE_IDS.forEach((puzzleId, index) => {
       const slotEntity = this.doorSlots[index];
-      const slotMaterial = slotEntity.render?.meshInstances[0]?.material as pc.StandardMaterial | undefined;
-      if (!slotMaterial) {
+      const rawMaterial = slotEntity.render?.meshInstances[0]?.material;
+      if (!(rawMaterial instanceof pc.StandardMaterial)) {
         return;
       }
+      const slotMaterial = rawMaterial;
 
       const solved = this.progress[puzzleId];
       slotMaterial.diffuse = solved ? new pc.Color(1, 0.82, 0.33) : new pc.Color(0.23, 0.26, 0.35);
@@ -964,13 +965,11 @@ export class JennyworldGame {
     const playerPosition = this.playerRoot.getPosition();
     const normalize = (value: number, halfSize: number): number => ((value + halfSize) / (halfSize * 2)) * 100;
     const zoneLabel = playerPosition.z > 6 ? '앞 교실' : playerPosition.z > -8 ? '중앙 통로' : '연구 구역';
-    if (this.lastZoneLabel === null) {
+    if (zoneLabel !== this.lastZoneLabel) {
+      if (this.lastZoneLabel !== null) {
+        this.ui.showZoneBanner(zoneLabel);
+      }
       this.lastZoneLabel = zoneLabel;
-      this.ui.setZoneLabel(zoneLabel);
-    } else if (zoneLabel !== this.lastZoneLabel) {
-      this.lastZoneLabel = zoneLabel;
-      this.ui.setZoneLabel(zoneLabel);
-    } else {
       this.ui.setZoneLabel(zoneLabel);
     }
     const markers = PUZZLE_IDS.map((puzzleId) => {
@@ -1265,7 +1264,7 @@ export class JennyworldGame {
 
     if (this.doorOpenAmount >= 1 && !this.clearShown) {
       this.clearShown = true;
-      this.progress.cleared = true;
+      this.progress = { ...this.progress, cleared: true };
       this.progressStore.save(this.gameProgress);
       this.updateObjective();
       this.ui.showClear();

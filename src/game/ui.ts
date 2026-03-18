@@ -30,6 +30,8 @@ import {
   STAGE_2_SWITCH_TARGET,
   STAGE_2_DEFINITIONS,
   STAGE_2_FINAL_DOOR_ANSWER,
+  SWITCH_LINKED,
+  STAGE_2_SWITCH_LINKED,
   type MemoryButton,
   type ShapeButton,
   type RhythmButton,
@@ -286,10 +288,10 @@ export class OverlayUI {
     this.currentStage = stage;
   }
 
-  private get stageColorSequence(): readonly string[] {
+  private get stageColorSequence() {
     return this.currentStage === 1 ? COLOR_SEQUENCE : STAGE_2_COLOR_SEQUENCE;
   }
-  private get stageShapeOrder(): readonly string[] {
+  private get stageShapeOrder() {
     return this.currentStage === 1 ? SHAPE_ORDER : STAGE_2_SHAPE_ORDER;
   }
   private get stageCountingOptions(): readonly number[] {
@@ -298,7 +300,7 @@ export class OverlayUI {
   private get stageCountingAnswer(): number {
     return this.currentStage === 1 ? COUNTING_ANSWER : STAGE_2_COUNTING_ANSWER;
   }
-  private get stageMemorySequence(): readonly string[] {
+  private get stageMemorySequence() {
     return this.currentStage === 1 ? MEMORY_SEQUENCE : STAGE_2_MEMORY_SEQUENCE;
   }
   private get stageRhythmSequence(): readonly RhythmButton[] {
@@ -306,6 +308,9 @@ export class OverlayUI {
   }
   private get stageSwitchTarget(): readonly boolean[] {
     return this.currentStage === 1 ? SWITCH_TARGET : STAGE_2_SWITCH_TARGET;
+  }
+  private get stageSwitchLinked(): boolean {
+    return this.currentStage === 1 ? SWITCH_LINKED : STAGE_2_SWITCH_LINKED;
   }
   private get stagePuzzleDefs() {
     return this.currentStage === 1 ? PUZZLE_DEFINITIONS : STAGE_2_DEFINITIONS;
@@ -879,7 +884,7 @@ export class OverlayUI {
 
     const updatePreview = (): void => {
       previewSlots.forEach((slot, index) => {
-        const color = seq[index] as keyof typeof COLOR_LABELS;
+        const color = seq[index];
         const isFilled = index < progress;
         slot.classList.toggle('is-filled', isFilled);
         slot.textContent = isFilled ? COLOR_LABELS[color] : '?';
@@ -888,7 +893,7 @@ export class OverlayUI {
     };
 
     uniqueColors.forEach((color) => {
-      const c = color as keyof typeof COLOR_LABELS;
+      const c = color;
       const button = document.createElement('button');
       button.className = 'puzzle-button';
       button.type = 'button';
@@ -1030,7 +1035,7 @@ export class OverlayUI {
         button.classList.remove('is-flashing');
       });
 
-      const memSeq = this.stageMemorySequence as readonly MemoryButton[];
+      const memSeq = this.stageMemorySequence;
       let delay = 450;
       memSeq.forEach((color) => {
         const button = buttonMap.get(color);
@@ -1059,7 +1064,7 @@ export class OverlayUI {
       this.activeTimers.push(finish);
     };
 
-    const memSeq = this.stageMemorySequence as readonly MemoryButton[];
+    const memSeq = this.stageMemorySequence;
     const uniqueMemColors = [...new Set(memSeq)];
     uniqueMemColors.forEach((color) => {
       const button = document.createElement('button');
@@ -1176,12 +1181,13 @@ export class OverlayUI {
       const button = document.createElement('button');
       button.className = 'choice-button';
       button.type = 'button';
+      const linked = this.stageSwitchLinked;
       button.addEventListener('click', () => {
         state[index] = !state[index];
-        if (index > 0) {
+        if (linked && index > 0) {
           state[index - 1] = !state[index - 1];
         }
-        if (index < state.length - 1) {
+        if (linked && index < state.length - 1) {
           state[index + 1] = !state[index + 1];
         }
         renderButtons();
@@ -1190,7 +1196,9 @@ export class OverlayUI {
           onSolved();
           this.renderSolvedState(definition.success);
         } else {
-          feedback.textContent = '양옆 스위치도 같이 바뀌어. 잘 생각해서 눌러 보자.';
+          feedback.textContent = linked
+            ? '양옆 스위치도 같이 바뀌어. 잘 생각해서 눌러 보자.'
+            : '아직 패턴이 맞지 않아. 목표와 비교해 보자.';
         }
       });
       toggles.append(button);
