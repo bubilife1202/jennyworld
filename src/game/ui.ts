@@ -655,7 +655,9 @@ export class OverlayUI {
         selections.note === doorAnswer.note
       ) {
         onSolved();
-        this.renderSolvedState('세 단서를 다시 맞춰 무지개 문 잠금이 풀렸다.');
+        this.renderSolvedState(this.currentStage === 1
+          ? '세 단서를 다시 맞춰 무지개 문 잠금이 풀렸다.'
+          : '세 단서를 다시 맞춰 마법의 문 잠금이 풀렸다.');
         return;
       }
 

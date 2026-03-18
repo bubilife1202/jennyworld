@@ -1069,12 +1069,16 @@ export class JennyworldGame {
     this.updateHud();
 
     if (solvedCount === PUZZLE_IDS.length) {
-      this.ui.showToast('별 조각을 모두 모았다. 최종 문 시험을 풀러 가자!');
+      this.ui.showToast(this.currentStage === 1
+        ? '별 조각을 모두 모았다. 최종 문 시험을 풀러 가자!'
+        : '별빛 조각을 모두 모았다. 마법의 문 시험을 풀러 가자!');
     } else if (solvedCount === 3) {
       this.isResearchGateOpening = true;
-      this.ui.showToast('앞 교실을 돌파했다. 중앙 연구 게이트가 열린다!');
+      this.ui.showToast(this.currentStage === 1
+        ? '앞 교실을 돌파했다. 중앙 연구 게이트가 열린다!'
+        : '정원 앞쪽을 돌파했다. 덩굴 아치가 열린다!');
     } else {
-      this.ui.showToast('별 조각을 찾았다!');
+      this.ui.showToast(this.currentStage === 1 ? '별 조각을 찾았다!' : '별빛 조각을 찾았다!');
     }
   }
 
@@ -1347,8 +1351,10 @@ export class JennyworldGame {
         const solvedCount = countSolvedPuzzles(this.progress);
         nearest.prompt.detail =
           solvedCount === PUZZLE_IDS.length
-            ? '앞과 뒤 구역 단서를 다시 조합하는 최종 문 시험을 시작하자.'
-            : `별 조각 ${PUZZLE_IDS.length - solvedCount}개가 더 필요하다.`;
+            ? (this.currentStage === 1
+              ? '앞과 뒤 구역 단서를 다시 조합하는 최종 문 시험을 시작하자.'
+              : '정원 곳곳의 단서를 다시 조합하는 최종 문 시험을 시작하자.')
+            : `${this.currentStage === 1 ? '별 조각' : '별빛 조각'} ${PUZZLE_IDS.length - solvedCount}개가 더 필요하다.`;
         nearest.prompt.actionLabel = solvedCount === PUZZLE_IDS.length ? '시험 시작' : '문 확인';
       }
       this.ui.setPrompt(nearest.prompt);
@@ -1509,13 +1515,13 @@ export class JennyworldGame {
     if (solvedCount < 3) {
       this.ui.setObjective(
         this.currentStage === 1 ? '앞쪽 교실 단서를 모으자' : '정원 앞쪽을 탐색하자',
-        `퍼즐을 먼저 정리하자. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 별 조각 ${remaining}개.`);
+        `퍼즐을 먼저 정리하자. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 ${this.currentStage === 1 ? '별 조각' : '별빛 조각'} ${remaining}개.`);
       return;
     }
 
     this.ui.setObjective(
       this.currentStage === 1 ? '뒤쪽 연구 구역을 돌파하자' : '정원 안쪽을 돌파하자',
-      `${this.currentStage === 1 ? '연구 구역' : '정원 안쪽'} 퍼즐이 남아 있다. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 별 조각 ${remaining}개.`);
+      `${this.currentStage === 1 ? '연구 구역' : '정원 안쪽'} 퍼즐이 남아 있다. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 ${this.currentStage === 1 ? '별 조각' : '별빛 조각'} ${remaining}개.`);
   }
 
   async transitionToStage2(): Promise<void> {
