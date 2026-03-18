@@ -608,13 +608,21 @@ export class OverlayUI {
     this.collapseSecondaryPanelsForModal();
     this.setPrompt(null);
 
+    const examSubtitles = [
+      '색 퍼즐의 순서, 도형 퍼즐의 배열, 멜로디 퍼즐의 음을 기억해서 문 코드를 완성하자.',
+      '별빛 물감의 순서, 별자리 배열, 풀벌레 멜로디를 기억해서 문 코드를 완성하자.',
+      '얼음 프리즘의 순서, 결정 배열, 얼음 종소리를 기억해서 문 코드를 완성하자.',
+      '무지개 아치의 순서, 별자리 배열, 바람의 노래를 기억해서 문 코드를 완성하자.',
+    ];
+    const examHints = [
+      '색 순서에서 네 번째 색, 도형 배열에서 마지막 도형, 멜로디에서 세 번째 음이 정답이야.',
+      '색 순서에서 첫 번째 색, 도형 배열에서 첫 번째 도형, 멜로디에서 첫 번째 음이 정답이야.',
+      '색 순서에서 다섯 번째 색, 도형 배열에서 세 번째 도형, 멜로디에서 첫 번째 음이 정답이야.',
+      '색 순서에서 네 번째 색, 도형 배열에서 세 번째 도형, 멜로디에서 첫 번째 음이 정답이야.',
+    ];
     const wrapper = this.createPuzzleWrapper(
-      ['앞 교실과 연구 구역', '정원 곳곳', '동굴 곳곳', '성 곳곳'][this.currentStage - 1] + '에서 봤던 단서를 다시 조합해 문 코드를 완성하자.',
-      ['네 번째 색, 마지막 도형, 세 번째 음을 떠올려 보자.',
-       '첫 번째 색, 첫 번째 도형, 첫 번째 음을 떠올려 보자.',
-       '다섯 번째 색, 세 번째 도형, 첫 번째 음을 떠올려 보자.',
-       '네 번째 색, 세 번째 도형, 첫 번째 음을 떠올려 보자.',
-      ][this.currentStage - 1],
+      examSubtitles[this.currentStage - 1],
+      examHints[this.currentStage - 1],
     );
     const sections = document.createElement('div');
     sections.className = 'choice-grid';
