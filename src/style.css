@@ -497,6 +497,15 @@ button {
   transform: translateY(2px) scale(0.98);
 }
 
+.action-button:not(.is-hidden) {
+  animation: action-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes action-pulse {
+  0%, 100% { box-shadow: 0 16px 32px rgba(255, 176, 51, 0.35); }
+  50%      { box-shadow: 0 16px 40px rgba(255, 176, 51, 0.6), 0 0 0 6px rgba(255, 185, 59, 0.18); }
+}
+
 .joystick {
   position: absolute;
   left: 1rem;
@@ -1358,6 +1367,15 @@ button {
 .stage-transition.is-fading-in {
   opacity: 1;
   pointer-events: auto;
+}
+
+.stage-transition.is-fading-in .transition-text {
+  animation: transition-breathe 1.4s ease-in-out infinite;
+}
+
+@keyframes transition-breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.97); }
 }
 
 .stage-transition.is-fading-out {

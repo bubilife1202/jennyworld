@@ -582,8 +582,12 @@ export class OverlayUI {
     this.setPrompt(null);
 
     const wrapper = this.createPuzzleWrapper(
-      '앞 교실과 연구 구역에서 봤던 단서를 다시 조합해 문 코드를 완성하자.',
-      '네 번째 색, 마지막 도형, 세 번째 음을 떠올려 보자.',
+      this.currentStage === 1
+        ? '앞 교실과 연구 구역에서 봤던 단서를 다시 조합해 문 코드를 완성하자.'
+        : '정원 곳곳에서 봤던 단서를 다시 조합해 문 코드를 완성하자.',
+      this.currentStage === 1
+        ? '네 번째 색, 마지막 도형, 세 번째 음을 떠올려 보자.'
+        : '첫 번째 색, 첫 번째 도형, 첫 번째 음을 떠올려 보자.',
     );
     const sections = document.createElement('div');
     sections.className = 'choice-grid';
@@ -655,7 +659,9 @@ export class OverlayUI {
         return;
       }
 
-      feedback.textContent = '조합이 틀렸어. 앞 교실과 연구 구역의 단서를 다시 떠올려 보자.';
+      feedback.textContent = this.currentStage === 1
+        ? '조합이 틀렸어. 앞 교실과 연구 구역의 단서를 다시 떠올려 보자.'
+        : '조합이 틀렸어. 정원의 단서를 다시 떠올려 보자.';
     });
 
     wrapper.append(sections, feedback, confirm);
