@@ -1,6 +1,6 @@
 import * as pc from 'playcanvas';
 import {
-  PUZZLE_DEFINITIONS, PUZZLE_IDS, STAGE_TITLE,
+  PUZZLE_DEFINITIONS, PUZZLE_IDS, STAGE_TITLE, STAGE_SUBTITLE,
   STAGE_2_TITLE, STAGE_2_SUBTITLE, STAGE_2_DEFINITIONS,
   type PuzzleDefinition,
 } from './puzzles';
@@ -91,7 +91,7 @@ export class JennyworldGame {
   private readonly doorRoot: pc.Entity;
   private readonly researchGateRoot: pc.Entity;
   private readonly interactables: Interactable[] = [];
-  private readonly floatingEntities: pc.Entity[] = [];
+  private readonly floatingEntities: Array<{ entity: pc.Entity; baseY: number }> = [];
   private readonly puzzleStations = new Map<PuzzleId, PuzzleStation>();
   private readonly obstacleMap: Obstacle[] = [];
   private readonly researchGateObstacle: Obstacle = { x: 0, z: -6.4, radius: 2.25 };
@@ -173,6 +173,26 @@ export class JennyworldGame {
     this.app.on('update', (dt: number) => {
       this.update(dt);
     });
+  }
+
+  getCurrentStage(): 1 | 2 {
+    return this.currentStage;
+  }
+
+  private clearScene(): void {
+    const keep = new Set<pc.Entity>([this.camera]);
+    const entitiesToRemove: pc.Entity[] = [];
+    this.app.root.children.forEach((child) => {
+      if (!keep.has(child as pc.Entity) && child.name !== 'sun' && child.name !== 'fill') {
+        entitiesToRemove.push(child as pc.Entity);
+      }
+    });
+    entitiesToRemove.forEach((entity) => entity.destroy());
+    this.interactables.length = 0;
+    this.floatingEntities.length = 0;
+    this.obstacleMap.length = 0;
+    this.puzzleStations.clear();
+    this.doorSlots.length = 0;
   }
 
   focus(): void {
@@ -278,43 +298,71 @@ export class JennyworldGame {
     });
   }
 
-  resetStage(): void {
+  async resetStage(): Promise<void> {
     if (this.isTransitioning) {
       return;
     }
-    this.gameProgress = this.progressStore.reset();
-    this.currentStage = 1;
-    this.clearShown = false;
-    this.isResearchGateOpening = false;
-    this.researchGateOpenAmount = 0;
-    this.isDoorOpening = false;
-    this.doorOpenAmount = 0;
-    this.timeElapsed = 0;
-    this.playerHeight = 0;
-    this.verticalVelocity = 0;
-    this.jumpKeyWasDown = false;
-    this.wasAirborne = false;
-    this.landingBounce = 0;
-    this.playerVelocity.set(0, 0, 0);
-    this.cameraYaw = 0;
-    this.cameraPitch = 6;
-    this.lastZoneLabel = null;
-    this.pendingJump = false;
-    this.jumpCharge = 0;
-    this.hintTimer = 0;
-    this.ui.setStage(1);
-    this.researchGateObstacle.radius = 2.25;
-    this.researchGateRoot.setLocalPosition(0, 0, -6.4);
-    this.doorRoot.setLocalPosition(0, 0, FINAL_DOOR_Z);
-    this.playerRoot.setPosition(0, 0, PLAYER_START_Z);
-    this.playerRoot.setEulerAngles(0, 180, 0);
-    this.restoreStateFromProgress();
-    this.refreshChecklist();
-    this.updateHud();
-    this.updateObjective();
-    this.ui.setPrompt(null);
-    this.ui.setProgress(0, PUZZLE_IDS.length);
-    this.ui.showToast('탐험 교실을 처음부터 다시 시작했다.');
+    this.isTransitioning = true;
+    try {
+      await this.ui.showTransition('교실로 돌아가는 중...');
+
+      this.clearScene();
+
+      this.gameProgress = this.progressStore.reset();
+      this.currentStage = 1;
+      this.clearShown = false;
+      this.isResearchGateOpening = false;
+      this.researchGateOpenAmount = 0;
+      this.isDoorOpening = false;
+      this.doorOpenAmount = 0;
+      this.timeElapsed = 0;
+      this.playerHeight = 0;
+      this.verticalVelocity = 0;
+      this.jumpKeyWasDown = false;
+      this.wasAirborne = false;
+      this.landingBounce = 0;
+      this.playerVelocity.set(0, 0, 0);
+      this.cameraYaw = 0;
+      this.cameraPitch = 6;
+      this.lastZoneLabel = null;
+      this.pendingJump = false;
+      this.jumpCharge = 0;
+      this.hintTimer = 0;
+      this.ui.setStage(1);
+
+      // Restore Room 1 lighting
+      const sun = this.app.root.findByName('sun') as pc.Entity | null;
+      if (sun?.light) {
+        sun.light.color = new pc.Color(1, 0.96, 0.86);
+        sun.light.intensity = 1.8;
+      }
+      const fill = this.app.root.findByName('fill') as pc.Entity | null;
+      if (fill?.light) {
+        fill.light.color = new pc.Color(0.72, 0.85, 1);
+        fill.light.intensity = 0.9;
+      }
+      this.app.scene.ambientLight = new pc.Color(0.74, 0.78, 0.88);
+      const cameraComponent = this.camera.camera;
+      if (cameraComponent) {
+        cameraComponent.clearColor = new pc.Color(0.86, 0.96, 1);
+      }
+
+      this.buildScene();
+      this.restoreStateFromProgress();
+      this.refreshChecklist();
+      this.updateHud();
+      this.updateObjective();
+      this.ui.setPrompt(null);
+      this.ui.setProgress(0, PUZZLE_IDS.length);
+      this.ui.updateBrandTitle(STAGE_TITLE, STAGE_SUBTITLE);
+      this.camera.setPosition(0, 7.8, PLAYER_START_Z + 12.5);
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      this.ui.hideTransition();
+      this.ui.showToast('탐험 교실을 처음부터 다시 시작했다.');
+    } finally {
+      this.isTransitioning = false;
+    }
   }
 
   private buildScene(): void {
@@ -377,9 +425,9 @@ export class JennyworldGame {
       anchor.addChild(this.makePrimitive('cylinder', clueMarkerMaterial, new pc.Vec3(0, 0.02, 0), new pc.Vec3(0.7, 0.04, 0.7), `clue-disc-${index}`));
       anchor.addChild(this.makePrimitive('cylinder', clueRingMaterial, new pc.Vec3(0, 0.05, 0), new pc.Vec3(0.85, 0.03, 0.85), `clue-ring-${index}`));
 
-      const glow = this.makePrimitive('sphere', glowMaterial, new pc.Vec3(0, 0.5, 0), new pc.Vec3(0.25, 0.25, 0.25), `clue-glow-${index}`);
+      const glow = this.makePrimitive('sphere', glowMaterial, new pc.Vec3(0, 0.5, 0), new pc.Vec3(0.25, 0.25, 0.25), `clue-glow-${index}`, false);
       anchor.addChild(glow);
-      this.floatingEntities.push(glow);
+      this.floatingEntities.push({ entity: glow, baseY: 0.5 });
 
       this.interactables.push({
         kind: 'clue',
@@ -584,7 +632,7 @@ export class JennyworldGame {
     root.addChild(pedestal);
     root.addChild(plate);
     root.addChild(orb);
-    this.floatingEntities.push(orb);
+    this.floatingEntities.push({ entity: orb, baseY: 3.45 });
 
     this.decorateStation(id, root);
 
@@ -1063,10 +1111,13 @@ export class JennyworldGame {
   }
 
   private refreshChecklist(): void {
+    const defs = this.currentStage === 1 ? PUZZLE_DEFINITIONS : STAGE_2_DEFINITIONS;
+    const frontZone = this.currentStage === 1 ? '앞 교실' : '정원 앞쪽';
+    const backZone = this.currentStage === 1 ? '연구 구역' : '정원 안쪽';
     this.ui.setChecklist(
       PUZZLE_IDS.map((puzzleId) => ({
-        label: PUZZLE_DEFINITIONS[puzzleId].title,
-        zone: puzzleId === 'colors' || puzzleId === 'shapes' || puzzleId === 'count' ? '앞 교실' : '연구 구역',
+        label: defs[puzzleId].title,
+        zone: puzzleId === 'colors' || puzzleId === 'shapes' || puzzleId === 'count' ? frontZone : backZone,
         solved: this.progress[puzzleId],
       })),
     );
@@ -1310,10 +1361,9 @@ export class JennyworldGame {
   }
 
   private animateFloaters(dt: number): void {
-    this.floatingEntities.forEach((entity, index) => {
-      const baseX = entity.getLocalPosition().x;
-      const baseZ = entity.getLocalPosition().z;
-      entity.setLocalPosition(baseX, 3.45 + Math.sin(this.timeElapsed * 2.2 + index) * 0.12, baseZ);
+    this.floatingEntities.forEach(({ entity, baseY }, index) => {
+      const pos = entity.getLocalPosition();
+      entity.setLocalPosition(pos.x, baseY + Math.sin(this.timeElapsed * 2.2 + index) * 0.12, pos.z);
       entity.rotateLocal(0, dt * 42, 0);
     });
   }
@@ -1352,23 +1402,35 @@ export class JennyworldGame {
 
   private updateObjective(): void {
     const solvedCount = countSolvedPuzzles(this.progress);
+    const stageTitle = this.currentStage === 1 ? STAGE_TITLE : STAGE_2_TITLE;
+    const remaining = PUZZLE_IDS.length - solvedCount;
 
     if (this.progress.cleared) {
-      this.ui.setObjective(`${STAGE_TITLE} 클리어`, '긴 교실과 연구 구역을 모두 돌파했다. 더 큰 테마 스테이지를 붙일 준비가 됐다.');
+      this.ui.setObjective(`${stageTitle} 클리어`, this.currentStage === 1
+        ? '긴 교실과 연구 구역을 모두 돌파했다. 별빛 정원이 기다린다.'
+        : '별빛 정원의 모든 퍼즐을 풀었다. 축하해!');
       return;
     }
 
     if (solvedCount === PUZZLE_IDS.length) {
-      this.ui.setObjective('북쪽 무지개 문으로 가자', '별 조각 여섯 개를 모두 모았다. 가장 안쪽 탈출 문으로 달려가자.');
+      this.ui.setObjective(
+        this.currentStage === 1 ? '북쪽 무지개 문으로 가자' : '마법의 문으로 가자',
+        this.currentStage === 1
+          ? '별 조각 여섯 개를 모두 모았다. 가장 안쪽 탈출 문으로 달려가자.'
+          : '별빛 조각 여섯 개를 모두 모았다. 마법의 문으로 달려가자.');
       return;
     }
 
     if (solvedCount < 3) {
-      this.ui.setObjective('앞쪽 교실 단서를 모으자', `앞 교실 퍼즐을 먼저 정리하자. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 별 조각 ${PUZZLE_IDS.length - solvedCount}개.`);
+      this.ui.setObjective(
+        this.currentStage === 1 ? '앞쪽 교실 단서를 모으자' : '정원 앞쪽을 탐색하자',
+        `퍼즐을 먼저 정리하자. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 별 조각 ${remaining}개.`);
       return;
     }
 
-    this.ui.setObjective('뒤쪽 연구 구역을 돌파하자', `연구 구역 퍼즐이 남아 있다. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 별 조각 ${PUZZLE_IDS.length - solvedCount}개.`);
+    this.ui.setObjective(
+      this.currentStage === 1 ? '뒤쪽 연구 구역을 돌파하자' : '정원 안쪽을 돌파하자',
+      `${this.currentStage === 1 ? '연구 구역' : '정원 안쪽'} 퍼즐이 남아 있다. 진행 ${solvedCount} / ${PUZZLE_IDS.length}, 남은 별 조각 ${remaining}개.`);
   }
 
   async transitionToStage2(): Promise<void> {
@@ -1380,21 +1442,7 @@ export class JennyworldGame {
     try {
       await this.ui.showTransition('별빛 정원으로 이동 중...');
 
-      // Remove all scene entities except lights and camera
-      const entitiesToRemove: pc.Entity[] = [];
-      this.app.root.children.forEach((child) => {
-        if (child !== this.camera && child.name !== 'sun' && child.name !== 'fill') {
-          entitiesToRemove.push(child as pc.Entity);
-        }
-      });
-      entitiesToRemove.forEach((entity) => (entity as pc.Entity).destroy());
-
-      // Reset state
-      this.interactables.length = 0;
-      this.floatingEntities.length = 0;
-      this.obstacleMap.length = 0;
-      this.puzzleStations.clear();
-      this.doorSlots.length = 0;
+      this.clearScene();
       this.currentStage = 2;
       this.gameProgress.stage = 2;
       this.clearShown = false;
@@ -1709,7 +1757,7 @@ export class JennyworldGame {
       this.app.root.addChild(anchor);
       const glow = this.makePrimitive('sphere', glowMaterial, new pc.Vec3(0, 0.5, 0), new pc.Vec3(0.25, 0.25, 0.25), `room2-clue-glow-${index}`);
       anchor.addChild(glow);
-      this.floatingEntities.push(glow);
+      this.floatingEntities.push({ entity: glow, baseY: 0.5 });
       this.interactables.push({ kind: 'clue', entity: anchor, prompt: clue.prompt, title: clue.title, body: clue.body });
     });
 
@@ -1741,9 +1789,9 @@ export class JennyworldGame {
     fireflyPositions.forEach((position, index) => {
       const isGreen = index < 9;
       const mat = isGreen ? fireflyMaterial : yellowFireflyMaterial;
-      const firefly = this.makePrimitive('sphere', mat, position, new pc.Vec3(0.15, 0.15, 0.15), `firefly-${index}`);
+      const firefly = this.makePrimitive('sphere', mat, position, new pc.Vec3(0.15, 0.15, 0.15), `firefly-${index}`, false);
       this.app.root.addChild(firefly);
-      this.floatingEntities.push(firefly);
+      this.floatingEntities.push({ entity: firefly, baseY: position.y });
     });
 
     // Player start

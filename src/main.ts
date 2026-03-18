@@ -31,7 +31,13 @@ Object.assign(window as JennyworldWindow, {
 ui.setHandlers({
   onAction: () => game.handleAction(),
   onReset: () => game.resetStage(),
-  onNextStage: () => { game.transitionToStage2(); },
+  onNextStage: () => {
+    if (game.getCurrentStage() === 2) {
+      game.resetStage();
+    } else {
+      game.transitionToStage2();
+    }
+  },
 });
 
 if (import.meta.hot) {
