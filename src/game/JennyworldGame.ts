@@ -264,9 +264,10 @@ export class JennyworldGame {
 
   renderGameToText(): string {
     const playerPosition = this.playerRoot.getPosition();
-    const zone = this.currentStage === 1
-      ? (playerPosition.z > 6 ? 'front-classroom' : playerPosition.z > -8 ? 'middle-corridor' : 'research-wing')
-      : (playerPosition.z > 6 ? 'garden-front' : playerPosition.z > -8 ? 'garden-center' : 'garden-inner');
+    const zoneFronts = ['front-classroom', 'garden-front', 'cave-entrance', 'castle-lower'];
+    const zoneMids = ['middle-corridor', 'garden-center', 'cave-middle', 'castle-center'];
+    const zoneBacks = ['research-wing', 'garden-inner', 'cave-deep', 'castle-top'];
+    const zone = playerPosition.z > 6 ? zoneFronts[this.currentStage - 1] : playerPosition.z > -8 ? zoneMids[this.currentStage - 1] : zoneBacks[this.currentStage - 1];
     const nearest =
       this.nearestInteractable?.kind === 'puzzle'
         ? { kind: 'puzzle', id: this.nearestInteractable.id, title: this.nearestInteractable.prompt.title }
@@ -275,7 +276,7 @@ export class JennyworldGame {
           : null;
 
     return JSON.stringify({
-      stage: this.currentStage === 1 ? STAGE_TITLE : STAGE_2_TITLE,
+      stage: this.stageTitle,
       progress: this.progress,
       solvedCount: countSolvedPuzzles(this.progress),
       zone,
@@ -309,7 +310,7 @@ export class JennyworldGame {
     if (target.kind === 'door') {
       const missing = PUZZLE_IDS.length - countSolvedPuzzles(this.progress);
       if (missing > 0) {
-        const defs = this.currentStage === 1 ? PUZZLE_DEFINITIONS : STAGE_2_DEFINITIONS;
+        const defs = [PUZZLE_DEFINITIONS, STAGE_2_DEFINITIONS, STAGE_3_DEFINITIONS, STAGE_4_DEFINITIONS][this.currentStage - 1];
         const unsolved = PUZZLE_IDS.filter((puzzleId) => !this.progress[puzzleId])
           .slice(0, 2)
           .map((puzzleId) => defs[puzzleId].title)
@@ -1332,7 +1333,7 @@ export class JennyworldGame {
         continue;
       }
 
-      const interactRadius = this.currentStage === 1 ? 2.7 : 3.2;
+      const interactRadius = [2.7, 3.2, 3.0, 3.0][this.currentStage - 1];
       const worldPosition = interactable.entity.getPosition();
       const distance = Math.hypot(worldPosition.x - playerPosition.x, worldPosition.z - playerPosition.z);
       if (distance < interactRadius && distance < nearestDistance) {
@@ -1356,12 +1357,11 @@ export class JennyworldGame {
       }
       if (nearest.kind === 'door') {
         const solvedCount = countSolvedPuzzles(this.progress);
+        const locNames = ['앞과 뒤 구역', '정원 곳곳', '동굴 곳곳', '성 곳곳'];
         nearest.prompt.detail =
           solvedCount === PUZZLE_IDS.length
-            ? (this.currentStage === 1
-              ? '앞과 뒤 구역 단서를 다시 조합하는 최종 문 시험을 시작하자.'
-              : '정원 곳곳의 단서를 다시 조합하는 최종 문 시험을 시작하자.')
-            : `${this.currentStage === 1 ? '별 조각' : '별빛 조각'} ${PUZZLE_IDS.length - solvedCount}개가 더 필요하다.`;
+            ? `${locNames[this.currentStage - 1]}의 단서를 다시 조합하는 최종 문 시험을 시작하자.`
+            : `${this.stageFragmentName} ${PUZZLE_IDS.length - solvedCount}개가 더 필요하다.`;
         nearest.prompt.actionLabel = solvedCount === PUZZLE_IDS.length ? '시험 시작' : '문 확인';
       }
       this.ui.setPrompt(nearest.prompt);
