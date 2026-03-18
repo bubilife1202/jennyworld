@@ -824,7 +824,7 @@ export class OverlayUI {
     this.joystick.addEventListener('pointercancel', releaseJoystick);
 
     this.canvas.addEventListener('pointerdown', (event) => {
-      if (this.modalVisible || this.clearVisible || this.joystickPointerId !== null) {
+      if (this.modalVisible || this.clearVisible || this.lookPointerId !== null) {
         return;
       }
 
