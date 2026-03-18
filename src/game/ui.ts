@@ -537,6 +537,7 @@ export class OverlayUI {
     const timer = window.setTimeout(() => {
       this.transitionOverlay.classList.add('is-hidden');
       this.transitionOverlay.classList.remove('is-fading-out');
+      this.transitionOverlay.style.background = '';
     }, 600);
     this.activeTimers.push(timer);
   }
