@@ -612,6 +612,8 @@ export class OverlayUI {
         button.addEventListener('click', () => {
           apply(value);
           feedback.textContent = `${title} 선택: ${value}`;
+          block.querySelectorAll('.choice-button').forEach((btn) => btn.classList.remove('is-on'));
+          button.classList.add('is-on');
         });
         block.append(button);
       });
@@ -1017,6 +1019,11 @@ export class OverlayUI {
           this.renderSolvedState(definition.success);
         } else {
           feedback.textContent = '다시 한 번 천천히 세어 보자.';
+          button.style.transition = 'transform 80ms ease';
+          button.style.transform = 'translateX(-4px)';
+          const shakeTimer = window.setTimeout(() => { button.style.transform = 'translateX(4px)'; }, 80);
+          const resetTimer = window.setTimeout(() => { button.style.transform = ''; }, 160);
+          this.activeTimers.push(shakeTimer, resetTimer);
         }
       });
       choices.append(button);

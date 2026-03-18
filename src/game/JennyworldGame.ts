@@ -236,6 +236,9 @@ export class JennyworldGame {
   }
 
   handleAction(): void {
+    if (this.isTransitioning) {
+      return;
+    }
     const target = this.nearestInteractable;
     if (!target) {
       return;
@@ -276,6 +279,9 @@ export class JennyworldGame {
   }
 
   resetStage(): void {
+    if (this.isTransitioning) {
+      return;
+    }
     this.gameProgress = this.progressStore.reset();
     this.currentStage = 1;
     this.clearShown = false;
@@ -412,10 +418,10 @@ export class JennyworldGame {
       color: new pc.Color(1, 0.96, 0.86),
       intensity: 1.8,
       castShadows: true,
-      shadowDistance: 30,
-      shadowBias: 0.3,
-      normalOffsetBias: 0.05,
-      shadowResolution: 1024,
+      shadowDistance: 42,
+      shadowBias: 0.25,
+      normalOffsetBias: 0.04,
+      shadowResolution: 2048,
     });
     sun.setEulerAngles(45, 45, 0);
     this.app.root.addChild(sun);
@@ -1167,7 +1173,7 @@ export class JennyworldGame {
       return;
     }
 
-    this.walkCycle = Math.max(0, this.walkCycle - dt * 6);
+    // walkCycle decay handled in animateAvatar
   }
 
   private updateNearestInteractable(): void {
@@ -1274,8 +1280,11 @@ export class JennyworldGame {
     this.playerRoot.findByName('player-leg-left')?.setLocalEulerAngles(airborne ? 18 : -swing, 0, 0);
     this.playerRoot.findByName('player-leg-right')?.setLocalEulerAngles(airborne ? 18 : swing, 0, 0);
 
-    if (!moving) {
-      this.walkCycle = Math.max(0, this.walkCycle - dt * 5);
+    if (!moving && this.walkCycle > 0) {
+      this.walkCycle = Math.max(0, this.walkCycle - dt * 8);
+      if (this.walkCycle < 0.15) {
+        this.walkCycle = 0;
+      }
     }
   }
 
@@ -1488,6 +1497,10 @@ export class JennyworldGame {
     this.app.root.addChild(this.makePrimitive('box', fenceMaterial, new pc.Vec3(-9.5, fenceHeight / 2, -ROOM_HALF_DEPTH - 0.5), new pc.Vec3(21, fenceHeight, 1), 'fence-north-left'));
     this.app.root.addChild(this.makePrimitive('box', fenceMaterial, new pc.Vec3(9.5, fenceHeight / 2, -ROOM_HALF_DEPTH - 0.5), new pc.Vec3(21, fenceHeight, 1), 'fence-north-right'));
 
+    // Night sky dome
+    const skyMaterial = this.makeMaterial([0.06, 0.08, 0.16], [0.02, 0.03, 0.06]);
+    this.app.root.addChild(this.makePrimitive('sphere', skyMaterial, new pc.Vec3(0, -5, 0), new pc.Vec3(80, 40, 80), 'sky-dome', false));
+
     // Trees
     const treePositions = [
       new pc.Vec3(-15, 0, 20), new pc.Vec3(15, 0, 20),
@@ -1528,6 +1541,38 @@ export class JennyworldGame {
       }
     });
 
+    // Garden bench
+    const benchMaterial = this.makeMaterial([0.5, 0.38, 0.22], [0.07, 0.05, 0.03]);
+    const bench = new pc.Entity('garden-bench');
+    bench.setPosition(-7, 0, 0);
+    bench.addChild(this.makePrimitive('box', benchMaterial, new pc.Vec3(0, 0.55, 0), new pc.Vec3(2.8, 0.18, 0.9), 'bench-seat'));
+    bench.addChild(this.makePrimitive('box', benchMaterial, new pc.Vec3(0, 1.2, -0.38), new pc.Vec3(2.8, 1.1, 0.14), 'bench-back'));
+    bench.addChild(this.makePrimitive('box', benchMaterial, new pc.Vec3(-1.2, 0.28, 0), new pc.Vec3(0.18, 0.55, 0.7), 'bench-leg-l'));
+    bench.addChild(this.makePrimitive('box', benchMaterial, new pc.Vec3(1.2, 0.28, 0), new pc.Vec3(0.18, 0.55, 0.7), 'bench-leg-r'));
+    this.app.root.addChild(bench);
+    this.obstacleMap.push({ x: -7, z: 0, radius: 1.6 });
+
+    // Stone well
+    const wellMaterial = this.makeMaterial([0.48, 0.5, 0.52], [0.05, 0.05, 0.06]);
+    const well = new pc.Entity('garden-well');
+    well.setPosition(7, 0, 0);
+    well.addChild(this.makePrimitive('cylinder', wellMaterial, new pc.Vec3(0, 0.6, 0), new pc.Vec3(1.8, 1.2, 1.8), 'well-base'));
+    well.addChild(this.makePrimitive('cylinder', this.makeMaterial([0.15, 0.2, 0.35], [0.02, 0.03, 0.06]), new pc.Vec3(0, 0.1, 0), new pc.Vec3(1.3, 0.3, 1.3), 'well-water'));
+    well.addChild(this.makePrimitive('cylinder', treeTrunkMaterial, new pc.Vec3(-0.8, 1.8, 0), new pc.Vec3(0.12, 2.4, 0.12), 'well-post-l'));
+    well.addChild(this.makePrimitive('cylinder', treeTrunkMaterial, new pc.Vec3(0.8, 1.8, 0), new pc.Vec3(0.12, 2.4, 0.12), 'well-post-r'));
+    well.addChild(this.makePrimitive('box', treeTrunkMaterial, new pc.Vec3(0, 3.05, 0), new pc.Vec3(2, 0.14, 0.5), 'well-beam'));
+    this.app.root.addChild(well);
+    this.obstacleMap.push({ x: 7, z: 0, radius: 1.3 });
+
+    // Mushroom cluster
+    const mushroomCapMaterial = this.makeMaterial([0.9, 0.3, 0.35], [0.15, 0.04, 0.05]);
+    const mushroomStemMaterial = this.makeMaterial([0.92, 0.88, 0.78], [0.08, 0.07, 0.06]);
+    [new pc.Vec3(-14, 0, -14), new pc.Vec3(-13.3, 0, -13.5), new pc.Vec3(-14.5, 0, -13.2)].forEach((pos, i) => {
+      const scale = 0.6 + i * 0.15;
+      this.app.root.addChild(this.makePrimitive('cylinder', mushroomStemMaterial, new pc.Vec3(pos.x, 0.25 * scale, pos.z), new pc.Vec3(0.15 * scale, 0.5 * scale, 0.15 * scale), `mushroom-stem-${i}`, false));
+      this.app.root.addChild(this.makePrimitive('sphere', mushroomCapMaterial, new pc.Vec3(pos.x, 0.55 * scale, pos.z), new pc.Vec3(0.4 * scale, 0.22 * scale, 0.4 * scale), `mushroom-cap-${i}`, false));
+    });
+
     // Lanterns along the path
     const lanternPositions = [
       new pc.Vec3(-3, 0, 16), new pc.Vec3(3, 0, 16),
@@ -1556,12 +1601,13 @@ export class JennyworldGame {
     const starMaterial = this.makeMaterial([1, 1, 0.9], [1, 1, 0.8]);
     starMaterial.emissiveIntensity = 3;
     starMaterial.update();
-    for (let i = 0; i < 20; i += 1) {
-      const sx = -18 + Math.random() * 36;
-      const sy = 8 + Math.random() * 6;
-      const sz = -26 + Math.random() * 52;
-      const size = 0.08 + Math.random() * 0.12;
-      this.app.root.addChild(this.makePrimitive('sphere', starMaterial, new pc.Vec3(sx, sy, sz), new pc.Vec3(size, size, size), `sky-star-${i}`));
+    for (let i = 0; i < 30; i += 1) {
+      const seed = (i * 7919 + 104729) % 104729;
+      const sx = -18 + (seed % 360) / 10;
+      const sy = 8 + ((seed * 3) % 60) / 10;
+      const sz = -26 + ((seed * 7) % 520) / 10;
+      const size = 0.08 + ((seed * 11) % 12) / 100;
+      this.app.root.addChild(this.makePrimitive('sphere', starMaterial, new pc.Vec3(sx, sy, sz), new pc.Vec3(size, size, size), `sky-star-${i}`, false));
     }
 
     // Research gate (arch of vines)
@@ -1723,12 +1769,13 @@ export class JennyworldGame {
     position: pc.Vec3,
     scale: pc.Vec3,
     name: string,
+    shadows = true,
   ): pc.Entity {
     const entity = new pc.Entity(name);
     entity.addComponent('render', {
       type,
       material,
-      castShadows: true,
+      castShadows: shadows,
       receiveShadows: true,
     });
     entity.setLocalPosition(position);
