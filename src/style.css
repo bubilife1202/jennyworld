@@ -511,8 +511,8 @@ button {
 
 .joystick {
   position: absolute;
-  left: 1rem;
-  bottom: 1rem;
+  left: max(1rem, env(safe-area-inset-left, 0px));
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   width: 8.2rem;
   height: 8.2rem;
   border-radius: 50%;
@@ -1359,6 +1359,22 @@ button {
 .sequence-slot:focus-visible {
   outline: 3px solid rgba(47, 103, 255, 0.7);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-button:not(.is-hidden) { animation: none; }
+  .clear-star { animation: none; opacity: 1; transform: scale(1); }
+  .stage-transition.is-fading-in .transition-text { animation: none; }
+  .star-dot, .zone-banner, .prompt-panel, .action-button,
+  .toast, .modal-backdrop, .stage-transition {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.topbar {
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  left: max(1rem, env(safe-area-inset-left, 0px));
+  right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
 @media (orientation: portrait) and (max-width: 960px) {

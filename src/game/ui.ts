@@ -140,6 +140,8 @@ export class OverlayUI {
   private currentStage: 1 | 2 = 1;
   private lastMinimapJson = '';
   private minimapPlayerDot: HTMLDivElement | null = null;
+  private lastPlayerLeft = '';
+  private lastPlayerTop = '';
 
   constructor(mount: HTMLElement) {
     mount.innerHTML = `
@@ -447,8 +449,16 @@ export class OverlayUI {
       this.minimapField.replaceChildren(...children);
       this.minimapPlayerDot = player;
     } else if (this.minimapPlayerDot) {
-      this.minimapPlayerDot.style.left = `${state.player.x}%`;
-      this.minimapPlayerDot.style.top = `${state.player.y}%`;
+      const newLeft = `${state.player.x}%`;
+      const newTop = `${state.player.y}%`;
+      if (newLeft !== this.lastPlayerLeft) {
+        this.minimapPlayerDot.style.left = newLeft;
+        this.lastPlayerLeft = newLeft;
+      }
+      if (newTop !== this.lastPlayerTop) {
+        this.minimapPlayerDot.style.top = newTop;
+        this.lastPlayerTop = newTop;
+      }
     }
   }
 

@@ -1726,6 +1726,7 @@ export class JennyworldGame {
       lantern.addChild(this.makePrimitive('cylinder', fenceMaterial, new pc.Vec3(0, 1.2, 0), new pc.Vec3(0.15, 2.4, 0.15), `lantern-post-${index}`));
       lantern.addChild(this.makePrimitive('sphere', lanternMaterial, new pc.Vec3(0, 2.6, 0), new pc.Vec3(0.5, 0.5, 0.5), `lantern-light-${index}`));
       this.app.root.addChild(lantern);
+      this.obstacleMap.push({ x: position.x, z: position.z, radius: 0.4 });
       // Add point light for each lantern
       const light = new pc.Entity(`lantern-glow-${index}`);
       light.addComponent('light', {
@@ -1901,6 +1902,7 @@ export class JennyworldGame {
         new pc.Vec3(-1.5 + i * 0.5, 0.42, 0), new pc.Vec3(0.28, 0.28, 0.14), `color-stone-dot-${i}`, false));
     });
     this.app.root.addChild(colorStone);
+    this.obstacleMap.push({ x: -14, z: 14, radius: 1.4 });
 
     // Switch pattern on garden divider
     const switchCluePanel = new pc.Entity('switch-clue-divider');
