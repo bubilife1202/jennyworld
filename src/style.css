@@ -182,6 +182,11 @@ button {
   transform: translateY(-2px) scale(1.04);
 }
 
+.choice-button.is-on {
+  background: linear-gradient(180deg, #fff3b1 0%, #ffc85a 100%);
+  color: #5a3900;
+}
+
 .reset-button {
   border: 0;
   padding: 0.95rem 1.15rem;
@@ -212,6 +217,175 @@ button {
   margin: 0.35rem 0 0;
   color: var(--soft-ink);
   line-height: 1.35;
+}
+
+.zone-chip,
+.zone-banner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 11;
+  margin: 0;
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+}
+
+.zone-chip {
+  top: 1rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.zone-banner {
+  top: 3.4rem;
+  padding: 0.7rem 1rem;
+  background: rgba(29, 35, 64, 0.84);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.zone-banner.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -0.45rem);
+}
+
+.tracker-card,
+.minimap-card {
+  position: absolute;
+  right: 1rem;
+  width: 13.2rem;
+  padding: 0.9rem 1rem;
+  z-index: 10;
+}
+
+.tracker-card {
+  top: 8.1rem;
+}
+
+.minimap-card {
+  top: 20.2rem;
+}
+
+.tracker-title,
+.minimap-caption {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--soft-ink);
+}
+
+.tracker-list {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.tracker-item {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.tracker-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  margin-top: 0.18rem;
+  background: rgba(81, 102, 154, 0.2);
+  border: 1px solid rgba(81, 102, 154, 0.14);
+  flex: 0 0 auto;
+}
+
+.tracker-dot.is-solved {
+  background: linear-gradient(180deg, #ffe890 0%, #ffc94a 100%);
+  box-shadow: 0 0 12px rgba(255, 201, 74, 0.4);
+}
+
+.tracker-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.tracker-copy strong {
+  font-size: 0.82rem;
+  line-height: 1.15;
+}
+
+.tracker-copy span {
+  font-size: 0.7rem;
+  color: var(--soft-ink);
+}
+
+.minimap-field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  margin-top: 0.55rem;
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(253, 241, 183, 0.94) 0%, rgba(239, 247, 255, 0.95) 100%);
+  box-shadow: inset 0 0 0 1px rgba(81, 102, 154, 0.1);
+}
+
+.minimap-field::before,
+.minimap-field::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.minimap-field::before {
+  background:
+    linear-gradient(90deg, transparent 24%, rgba(81, 102, 154, 0.08) 24%, rgba(81, 102, 154, 0.08) 26%, transparent 26%, transparent 74%, rgba(81, 102, 154, 0.08) 74%, rgba(81, 102, 154, 0.08) 76%, transparent 76%),
+    linear-gradient(180deg, transparent 48%, rgba(81, 102, 154, 0.08) 48%, rgba(81, 102, 154, 0.08) 52%, transparent 52%);
+}
+
+.minimap-field::after {
+  border: 2px solid rgba(81, 102, 154, 0.12);
+  border-radius: 20px;
+}
+
+.minimap-dot,
+.minimap-player,
+.minimap-target {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+
+.minimap-dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  background: rgba(81, 102, 154, 0.36);
+}
+
+.minimap-dot.is-solved {
+  background: rgba(255, 201, 74, 0.88);
+}
+
+.minimap-target {
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 2px solid rgba(255, 104, 104, 0.9);
+  box-shadow: 0 0 18px rgba(255, 104, 104, 0.35);
+}
+
+.minimap-player {
+  width: 0.85rem;
+  height: 0.85rem;
+  background: #2f67ff;
+  box-shadow: 0 0 12px rgba(47, 103, 255, 0.38);
 }
 
 .prompt-panel {
@@ -359,6 +533,8 @@ button {
   box-shadow: 0 14px 28px rgba(255, 176, 51, 0.32);
   font-size: 1rem;
   font-weight: 800;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .modal-backdrop,
@@ -812,6 +988,20 @@ button {
     padding: 0.75rem 0.9rem;
   }
 
+  .tracker-card {
+    top: auto;
+    right: 1rem;
+    bottom: 12.1rem;
+    width: 12rem;
+  }
+
+  .minimap-card {
+    top: auto;
+    right: 1rem;
+    bottom: 22rem;
+    width: 10.6rem;
+  }
+
   .action-button {
     width: min(11rem, calc(100vw - 9.4rem));
     bottom: 1rem;
@@ -922,10 +1112,20 @@ button {
 
   .eyebrow,
   .brand-subtitle,
-  .objective-card,
-  .prompt-detail,
   .toast {
     display: none;
+  }
+
+  .zone-chip {
+    top: 0.8rem;
+    font-size: 0.68rem;
+    padding: 0.38rem 0.7rem;
+  }
+
+  .zone-banner {
+    top: 3rem;
+    font-size: 0.78rem;
+    padding: 0.55rem 0.8rem;
   }
 
   .topbar {
@@ -949,6 +1149,52 @@ button {
     right: 0.75rem;
     bottom: 6.25rem;
     padding: 0.7rem 0.8rem;
+  }
+
+  .objective-card {
+    display: block;
+    left: 0.75rem;
+    right: 6.95rem;
+    top: 5.25rem;
+    bottom: auto;
+    max-width: none;
+    padding: 0.7rem 0.8rem;
+  }
+
+  .tracker-card {
+    display: none;
+  }
+
+  .minimap-card {
+    right: 0.75rem;
+    bottom: 10.4rem;
+    top: auto;
+    width: 5.2rem;
+    padding: 0.45rem;
+    border-radius: 18px;
+  }
+
+  .minimap-field {
+    margin-top: 0;
+    border-radius: 14px;
+  }
+
+  .minimap-caption {
+    margin-top: 0.3rem;
+    font-size: 0.62rem;
+    text-align: center;
+  }
+
+  .objective-title {
+    font-size: 0.9rem;
+  }
+
+  .objective-detail,
+  .prompt-detail {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.78rem;
+    line-height: 1.3;
   }
 
   .prompt-label {
@@ -1003,9 +1249,9 @@ button {
   }
 
   .jump-button {
-    width: 4rem;
-    height: 4rem;
-    font-size: 0.82rem;
+    width: 4.8rem;
+    height: 4.8rem;
+    font-size: 0.92rem;
   }
 }
 
@@ -1013,4 +1259,39 @@ button {
   .rotate-note {
     display: block;
   }
+}
+
+/* Stage transition overlay */
+.stage-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.stage-transition.is-hidden {
+  display: none;
+}
+
+.stage-transition.is-fading-in {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.stage-transition.is-fading-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.transition-text {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
 }
