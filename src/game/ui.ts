@@ -306,7 +306,7 @@ export class OverlayUI {
     this.currentStage = stage;
     const labelEl = this.canvas.closest('.game-shell')?.querySelector<HTMLSpanElement>('.stars-label');
     if (labelEl) {
-      labelEl.textContent = stage === 1 ? '모은 별 조각' : '모은 별빛 조각';
+      labelEl.textContent = ['모은 별 조각', '모은 별빛 조각', '모은 빙결 조각', '모은 천공 조각'][stage - 1];
     }
   }
 
@@ -604,12 +604,12 @@ export class OverlayUI {
     this.setPrompt(null);
 
     const wrapper = this.createPuzzleWrapper(
-      this.currentStage === 1
-        ? '앞 교실과 연구 구역에서 봤던 단서를 다시 조합해 문 코드를 완성하자.'
-        : '정원 곳곳에서 봤던 단서를 다시 조합해 문 코드를 완성하자.',
-      this.currentStage === 1
-        ? '네 번째 색, 마지막 도형, 세 번째 음을 떠올려 보자.'
-        : '첫 번째 색, 첫 번째 도형, 첫 번째 음을 떠올려 보자.',
+      ['앞 교실과 연구 구역', '정원 곳곳', '동굴 곳곳', '성 곳곳'][this.currentStage - 1] + '에서 봤던 단서를 다시 조합해 문 코드를 완성하자.',
+      ['네 번째 색, 마지막 도형, 세 번째 음을 떠올려 보자.',
+       '첫 번째 색, 첫 번째 도형, 첫 번째 음을 떠올려 보자.',
+       '다섯 번째 색, 세 번째 도형, 첫 번째 음을 떠올려 보자.',
+       '네 번째 색, 세 번째 도형, 첫 번째 음을 떠올려 보자.',
+      ][this.currentStage - 1],
     );
     const sections = document.createElement('div');
     sections.className = 'choice-grid';
@@ -677,15 +677,13 @@ export class OverlayUI {
         selections.note === doorAnswer.note
       ) {
         onSolved();
-        this.renderSolvedState(this.currentStage === 1
-          ? '세 단서를 다시 맞춰 무지개 문 잠금이 풀렸다.'
-          : '세 단서를 다시 맞춰 마법의 문 잠금이 풀렸다.');
+        const doorNames = ['무지개 문', '마법의 문', '빙결 문', '천공 문'];
+        this.renderSolvedState(`세 단서를 다시 맞춰 ${doorNames[this.currentStage - 1]} 잠금이 풀렸다.`);
         return;
       }
 
-      feedback.textContent = this.currentStage === 1
-        ? '조합이 틀렸어. 앞 교실과 연구 구역의 단서를 다시 떠올려 보자.'
-        : '조합이 틀렸어. 정원의 단서를 다시 떠올려 보자.';
+      const locHints = ['앞 교실과 연구 구역', '정원', '동굴', '성'];
+      feedback.textContent = `조합이 틀렸어. ${locHints[this.currentStage - 1]}의 단서를 다시 떠올려 보자.`;
     });
 
     wrapper.append(sections, feedback, confirm);
@@ -1034,9 +1032,12 @@ export class OverlayUI {
     const wrapper = this.createPuzzleWrapper(definition.subtitle, definition.hint);
     const note = document.createElement('div');
     note.className = 'puzzle-note';
-    note.textContent = this.currentStage === 1
-      ? '남쪽 긴 책상 위 줄무늬 연필만 세자. 짧은 막대나 다른 소품은 제외다.'
-      : '정원에 떠다니는 초록 반딧불만 세자. 노란 반딧불은 제외다.';
+    note.textContent = [
+      '남쪽 긴 책상 위 줄무늬 연필만 세자. 짧은 막대나 다른 소품은 제외다.',
+      '정원에 떠다니는 초록 반딧불만 세자. 노란 반딧불은 제외다.',
+      '동굴 천장에 매달린 파란 고드름만 세자. 투명 고드름은 제외다.',
+      '성벽에 걸린 금색 깃발만 세자. 은색 깃발은 제외다.',
+    ][this.currentStage - 1];
 
     const choices = document.createElement('div');
     choices.className = 'choice-grid';
@@ -1338,9 +1339,8 @@ export class OverlayUI {
 
     const followUp = document.createElement('p');
     followUp.className = 'modal-text';
-    followUp.textContent = this.currentStage === 1
-      ? '별 조각이 인벤토리에 저장됐다. 다음 구역까지 계속 탐험하자.'
-      : '별빛 조각이 인벤토리에 저장됐다. 다음 구역까지 계속 탐험하자.';
+    const fragNames = ['별 조각', '별빛 조각', '빙결 조각', '천공 조각'];
+    followUp.textContent = `${fragNames[this.currentStage - 1]}이 인벤토리에 저장됐다. 다음 구역까지 계속 탐험하자.`;
 
     const closeButton = document.createElement('button');
     closeButton.className = 'primary-button';

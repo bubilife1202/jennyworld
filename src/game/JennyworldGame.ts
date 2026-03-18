@@ -1081,16 +1081,12 @@ export class JennyworldGame {
     this.updateHud();
 
     if (solvedCount === PUZZLE_IDS.length) {
-      this.ui.showToast(this.currentStage === 1
-        ? '별 조각을 모두 모았다. 최종 문 시험을 풀러 가자!'
-        : '별빛 조각을 모두 모았다. 마법의 문 시험을 풀러 가자!');
+      this.ui.showToast(`${this.stageFragmentName}을 모두 모았다. ${this.stageDoorName} 시험을 풀러 가자!`);
     } else if (solvedCount === 3) {
       this.isResearchGateOpening = true;
-      this.ui.showToast(this.currentStage === 1
-        ? '앞 교실을 돌파했다. 중앙 연구 게이트가 열린다!'
-        : '정원 앞쪽을 돌파했다. 덩굴 아치가 열린다!');
+      this.ui.showToast(`${this.stageFrontZone}을 돌파했다. 중앙 게이트가 열린다!`);
     } else {
-      this.ui.showToast(this.currentStage === 1 ? '별 조각을 찾았다!' : '별빛 조각을 찾았다!');
+      this.ui.showToast(`${this.stageFragmentName}을 찾았다!`);
     }
   }
 
@@ -1160,9 +1156,8 @@ export class JennyworldGame {
   private updateHud(): void {
     const playerPosition = this.playerRoot.getPosition();
     const normalize = (value: number, halfSize: number): number => ((value + halfSize) / (halfSize * 2)) * 100;
-    const zoneLabel = this.currentStage === 1
-      ? (playerPosition.z > 6 ? '앞 교실' : playerPosition.z > -8 ? '중앙 통로' : '연구 구역')
-      : (playerPosition.z > 6 ? '정원 앞쪽' : playerPosition.z > -8 ? '정원 중앙' : '정원 안쪽');
+    const mid = ['중앙 통로', '정원 중앙', '동굴 중간', '성 중앙'][this.currentStage - 1];
+    const zoneLabel = playerPosition.z > 6 ? this.stageFrontZone : playerPosition.z > -8 ? mid : this.stageBackZone;
     if (zoneLabel !== this.lastZoneLabel) {
       if (this.lastZoneLabel !== null) {
         this.ui.showZoneBanner(zoneLabel);
@@ -1180,7 +1175,7 @@ export class JennyworldGame {
     });
 
     const solvedCount = countSolvedPuzzles(this.progress);
-    const backZone = this.currentStage === 1 ? '연구 구역' : '정원 안쪽';
+    const backZone = this.stageBackZone;
     const targetPosition =
       solvedCount >= PUZZLE_IDS.length
         ? this.doorRoot.getPosition()
@@ -1205,9 +1200,9 @@ export class JennyworldGame {
   }
 
   private refreshChecklist(): void {
-    const defs = this.currentStage === 1 ? PUZZLE_DEFINITIONS : STAGE_2_DEFINITIONS;
-    const frontZone = this.currentStage === 1 ? '앞 교실' : '정원 앞쪽';
-    const backZone = this.currentStage === 1 ? '연구 구역' : '정원 안쪽';
+    const defs = [PUZZLE_DEFINITIONS, STAGE_2_DEFINITIONS, STAGE_3_DEFINITIONS, STAGE_4_DEFINITIONS][this.currentStage - 1];
+    const frontZone = this.stageFrontZone;
+    const backZone = this.stageBackZone;
     this.ui.setChecklist(
       PUZZLE_IDS.map((puzzleId) => ({
         label: defs[puzzleId].title,
