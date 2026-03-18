@@ -50,7 +50,7 @@ const PLAYER_AIR_SPEED = 7.0;
 const PLAYER_ACCELERATION = 16;
 const PLAYER_DECELERATION = 18;
 const PLAYER_AIR_ACCELERATION = 10;
-const CAMERA_ROTATION_SENSITIVITY = 0.11;
+const CAMERA_ROTATION_SENSITIVITY = 0.16;
 const CAMERA_YAW_LIMIT = 55;
 const CAMERA_PITCH_LIMIT_UP = 35;
 const CAMERA_PITCH_LIMIT_DOWN = -22;
@@ -1120,12 +1120,12 @@ export class JennyworldGame {
         );
       }
       if (lookDelta.y !== 0) {
-        this.cameraPitch = pc.math.clamp(this.cameraPitch + lookDelta.y * 0.05, CAMERA_PITCH_LIMIT_DOWN, CAMERA_PITCH_LIMIT_UP);
+        this.cameraPitch = pc.math.clamp(this.cameraPitch + lookDelta.y * 0.08, CAMERA_PITCH_LIMIT_DOWN, CAMERA_PITCH_LIMIT_UP);
       }
-      if (this.cameraDragIdle > 3.0) {
-        const recenterBlend = 1 - Math.exp(-dt * 1.2);
+      if (this.cameraDragIdle > 5.0) {
+        const recenterBlend = 1 - Math.exp(-dt * 0.8);
         this.cameraYaw = pc.math.lerp(this.cameraYaw, 0, recenterBlend);
-        this.cameraPitch = pc.math.lerp(this.cameraPitch, 6, recenterBlend * 0.5);
+        this.cameraPitch = pc.math.lerp(this.cameraPitch, 6, recenterBlend * 0.3);
       }
       this.updatePlayerMovement(dt);
       this.updateNearestInteractable();

@@ -625,7 +625,7 @@ export class OverlayUI {
       examHints[this.currentStage - 1],
     );
     const sections = document.createElement('div');
-    sections.className = 'choice-grid';
+    sections.className = 'exam-sections';
     const selections: { color: string | null; shape: string | null; note: string | null } = {
       color: null,
       shape: null,
@@ -638,14 +638,33 @@ export class OverlayUI {
     confirm.type = 'button';
     confirm.textContent = '문 해제하기';
 
-    const renderChoiceSection = (title: string, choices: readonly string[], apply: (value: string) => void): HTMLDivElement => {
-      const block = document.createElement('div');
-      block.className = 'shape-grid';
+    const summaryStrip = document.createElement('div');
+    summaryStrip.className = 'exam-summary';
+    const summarySlots: Record<string, HTMLSpanElement> = {};
+    (['색', '도형', '음'] as const).forEach((cat) => {
+      const slot = document.createElement('span');
+      slot.className = 'exam-summary-slot';
+      slot.textContent = cat + ': ?';
+      summaryStrip.append(slot);
+      summarySlots[cat] = slot;
+    });
 
-      const label = document.createElement('div');
-      label.className = 'shape-target';
+    const renderChoiceSection = (title: string, step: number, choices: readonly string[], apply: (value: string) => void): HTMLDivElement => {
+      const card = document.createElement('div');
+      card.className = 'exam-category';
+
+      const header = document.createElement('div');
+      header.className = 'exam-category-header';
+      const badge = document.createElement('span');
+      badge.className = 'exam-step-badge';
+      badge.textContent = String(step);
+      const label = document.createElement('span');
+      label.className = 'exam-category-label';
       label.textContent = title;
-      block.append(label);
+      header.append(badge, label);
+
+      const row = document.createElement('div');
+      row.className = 'exam-choice-row';
 
       choices.forEach((value) => {
         const button = document.createElement('button');
@@ -654,29 +673,34 @@ export class OverlayUI {
         button.textContent = value;
         button.addEventListener('click', () => {
           apply(value);
-          feedback.textContent = `${title} 선택: ${value}`;
-          block.querySelectorAll('.choice-button').forEach((btn) => btn.classList.remove('is-on'));
+          summarySlots[title].textContent = title + ': ' + value;
+          summarySlots[title].classList.add('is-picked');
+          row.querySelectorAll('.choice-button').forEach((btn) => btn.classList.remove('is-on'));
           button.classList.add('is-on');
+          if (selections.color && selections.shape && selections.note) {
+            feedback.textContent = '세 가지 모두 선택 완료! 문을 해제하자.';
+          }
         });
-        block.append(button);
+        row.append(button);
       });
 
-      return block;
+      card.append(header, row);
+      return card;
     };
 
     const colorChoices = this.stageFinalDoorColorChoices;
     const shapeChoices = this.stageFinalDoorShapeChoices;
     const noteChoices = this.stageFinalDoorNoteChoices;
     sections.append(
-      renderChoiceSection('색', colorChoices.map((color) => COLOR_LABELS[color]), (value) => {
+      renderChoiceSection('색', 1, colorChoices.map((color) => COLOR_LABELS[color]), (value) => {
         const found = colorChoices.find((color) => COLOR_LABELS[color] === value) ?? null;
         selections.color = found;
       }),
-      renderChoiceSection('도형', shapeChoices.map((shape) => SHAPE_LABELS[shape]), (value) => {
+      renderChoiceSection('도형', 2, shapeChoices.map((shape) => SHAPE_LABELS[shape]), (value) => {
         const found = shapeChoices.find((shape) => SHAPE_LABELS[shape] === value) ?? null;
         selections.shape = found;
       }),
-      renderChoiceSection('음', noteChoices.map((note) => RHYTHM_LABELS[note]), (value) => {
+      renderChoiceSection('음', 3, noteChoices.map((note) => RHYTHM_LABELS[note]), (value) => {
         const found = noteChoices.find((note) => RHYTHM_LABELS[note] === value) ?? null;
         selections.note = found;
       }),
@@ -699,7 +723,7 @@ export class OverlayUI {
       feedback.textContent = `조합이 틀렸어. ${locHints[this.currentStage - 1]}의 단서를 다시 떠올려 보자.`;
     });
 
-    wrapper.append(sections, feedback, confirm);
+    wrapper.append(sections, summaryStrip, feedback, confirm);
     this.modalBody.replaceChildren(wrapper);
   }
 

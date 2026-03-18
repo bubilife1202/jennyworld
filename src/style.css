@@ -1361,6 +1361,92 @@ button {
   outline-offset: 2px;
 }
 
+/* Final Door Exam category cards */
+.exam-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.exam-category {
+  padding: 0.75rem 0.85rem;
+  border-radius: 18px;
+  background: rgba(240, 245, 255, 0.85);
+  border: 1.5px solid rgba(100, 130, 200, 0.18);
+}
+
+.exam-category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.55rem;
+}
+
+.exam-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c6d8ff 0%, #96b4f5 100%);
+  color: #1d2f6a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.exam-category-label {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--soft-ink);
+  letter-spacing: 0.06em;
+}
+
+.exam-choice-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.exam-choice-row .choice-button {
+  flex: 1 1 0;
+  min-height: 3.6rem;
+}
+
+.exam-summary {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.exam-summary-slot {
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(81, 102, 154, 0.1);
+  color: var(--soft-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: background 180ms ease, color 180ms ease;
+}
+
+.exam-summary-slot.is-picked {
+  background: linear-gradient(180deg, #fff3b1 0%, #ffc85a 100%);
+  color: #5a3900;
+}
+
+@media (max-width: 560px) {
+  .exam-choice-row .choice-button {
+    min-height: 3.2rem;
+    font-size: 1rem;
+    padding: 0.6rem 0.5rem;
+  }
+
+  .exam-summary-slot {
+    font-size: 0.72rem;
+    padding: 0.38rem 0.55rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .action-button:not(.is-hidden) { animation: none; }
   .clear-star { animation: none; opacity: 1; transform: scale(1); }
