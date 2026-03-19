@@ -49,6 +49,7 @@ button {
   border-radius: 999px;
   pointer-events: none;
   opacity: 0.6;
+  z-index: 0;
 }
 
 .game-shell::before {
@@ -81,7 +82,6 @@ button {
   inset: 0;
   pointer-events: none;
   z-index: 2;
-  contain: layout style;
 }
 
 .hud-card {
@@ -95,9 +95,9 @@ button {
 
 .topbar {
   position: absolute;
-  top: 1rem;
-  left: 1rem;
-  right: 1rem;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  left: max(1rem, env(safe-area-inset-left, 0px));
+  right: max(1rem, env(safe-area-inset-right, 0px));
   display: flex;
   justify-content: space-between;
   gap: 1rem;
@@ -1125,9 +1125,9 @@ button {
 
 @media (max-width: 560px) {
   .topbar {
-    top: 0.75rem;
-    left: 0.75rem;
-    right: 0.75rem;
+    top: max(0.75rem, env(safe-area-inset-top, 0px));
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
   }
 
   .brand-title {
@@ -1194,6 +1194,11 @@ button {
 
   .eyebrow,
   .brand-subtitle {
+    display: none;
+  }
+
+  .game-shell::before,
+  .game-shell::after {
     display: none;
   }
 
@@ -1457,11 +1462,6 @@ button {
   }
 }
 
-.topbar {
-  top: max(1rem, env(safe-area-inset-top, 0px));
-  left: max(1rem, env(safe-area-inset-left, 0px));
-  right: max(1rem, env(safe-area-inset-right, 0px));
-}
 
 @media (orientation: portrait) and (max-width: 960px) {
   .rotate-note {
