@@ -50,7 +50,7 @@ const PLAYER_AIR_SPEED = 7.0;
 const PLAYER_ACCELERATION = 16;
 const PLAYER_DECELERATION = 18;
 const PLAYER_AIR_ACCELERATION = 10;
-const IS_TOUCH_PRIMARY = 'ontouchstart' in globalThis || navigator.maxTouchPoints > 0;
+const IS_TOUCH_PRIMARY = 'ontouchstart' in window || (navigator.maxTouchPoints ?? 0) > 0;
 const CAMERA_ROTATION_SENSITIVITY = IS_TOUCH_PRIMARY ? 0.22 : 0.14;
 const CAMERA_PITCH_SENSITIVITY = IS_TOUCH_PRIMARY ? 0.14 : 0.07;
 const CAMERA_YAW_LIMIT = 55;
@@ -1015,8 +1015,8 @@ export class JennyworldGame {
         nearClip: 0.2,
       });
     }
-    this.camera.setPosition(0, 7.8, 12.5);
-    this.camera.lookAt(0, 1.8, PLAYER_START_Z - 6);
+    this.camera.setPosition(0, 7.8, PLAYER_START_Z + 12.5);
+    this.camera.lookAt(0, 1.8, PLAYER_START_Z);
     this.app.root.addChild(this.camera);
   }
 
